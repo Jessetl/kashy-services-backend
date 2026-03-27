@@ -27,7 +27,14 @@ export class SyncFirebaseUserUseCase implements UseCase<
       return UserMapper.toResponse(existing);
     }
 
-    const user = User.create(randomUUID(), input.firebaseUid, input.email);
+    const user = User.create(randomUUID(), input.firebaseUid, input.email, {
+      firstName: input.firstName,
+      lastName: input.lastName,
+      avatarUrl: input.avatarUrl,
+      locationLabel: input.locationLabel,
+      locationLatitude: input.locationLatitude,
+      locationLongitude: input.locationLongitude,
+    });
 
     // Try-catch para race condition: si dos requests concurrentes pasan el check
     // de arriba, el segundo save falla por unique constraint — recuperamos buscando

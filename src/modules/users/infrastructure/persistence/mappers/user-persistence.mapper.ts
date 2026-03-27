@@ -7,6 +7,14 @@ export class UserPersistenceMapper {
       orm.id,
       orm.firebaseUid,
       orm.email,
+      {
+        firstName: orm.firstName,
+        lastName: orm.lastName,
+        avatarUrl: orm.avatarUrl,
+        locationLabel: orm.locationLabel,
+        locationLatitude: orm.locationLatitude,
+        locationLongitude: orm.locationLongitude,
+      },
       orm.createdAt,
       orm.updatedAt,
     );
@@ -17,6 +25,12 @@ export class UserPersistenceMapper {
     orm.id = user.id;
     orm.firebaseUid = user.firebaseUid;
     orm.email = user.email;
+    orm.firstName = user.firstName;
+    orm.lastName = user.lastName;
+    orm.avatarUrl = user.avatarUrl;
+    orm.locationLabel = user.locationLabel;
+    orm.locationLatitude = user.locationLatitude;
+    orm.locationLongitude = user.locationLongitude;
     orm.createdAt = user.createdAt;
     orm.updatedAt = user.updatedAt;
     return orm;

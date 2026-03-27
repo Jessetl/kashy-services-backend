@@ -20,8 +20,10 @@ import { SyncFirebaseUserUseCase } from '../../application/use-cases/sync-fireba
 import { GetUserByIdUseCase } from '../../application/use-cases/get-user-by-id.use-case.js';
 import { RegisterUserUseCase } from '../../application/use-cases/register-user.use-case.js';
 import { LoginUserUseCase } from '../../application/use-cases/login-user.use-case.js';
+import { RefreshUserTokenUseCase } from '../../application/use-cases/refresh-user-token.use-case.js';
 import { RegisterUserDto } from '../../application/dtos/register-user.dto.js';
 import { LoginUserDto } from '../../application/dtos/login-user.dto.js';
+import { RefreshTokenDto } from '../../application/dtos/refresh-token.dto.js';
 import { UserResponseDto } from '../../application/dtos/user-response.dto.js';
 import { LoginResponseDto } from '../../application/dtos/login-response.dto.js';
 import type { FirebaseUser } from '../../../../shared-kernel/infrastructure/guards/firebase-auth.guard.js';
@@ -34,6 +36,7 @@ export class UsersController {
     private readonly getUserById: GetUserByIdUseCase,
     private readonly registerUser: RegisterUserUseCase,
     private readonly loginUser: LoginUserUseCase,
+    private readonly refreshUserToken: RefreshUserTokenUseCase,
   ) {}
 
   @Public()
@@ -63,6 +66,25 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Credenciales invalidas' })
   async login(@Body() dto: LoginUserDto) {
     return this.loginUser.execute(dto);
+  }
+
+  @Public()
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Refrescar ID token usando refresh token de Firebase',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Token renovado',
+    type: LoginResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Refresh token invalido o expirado',
+  })
+  async refresh(@Body() dto: RefreshTokenDto) {
+    return this.refreshUserToken.execute(dto);
   }
 
   @Get('me')

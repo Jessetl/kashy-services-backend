@@ -27,6 +27,36 @@ export class CreateUsersTable1711300000000 implements MigrationInterface {
             isNullable: false,
           },
           {
+            name: 'first_name',
+            type: 'varchar',
+            isNullable: true,
+          },
+          {
+            name: 'last_name',
+            type: 'varchar',
+            isNullable: true,
+          },
+          {
+            name: 'avatar_url',
+            type: 'varchar',
+            isNullable: true,
+          },
+          {
+            name: 'location_label',
+            type: 'varchar',
+            isNullable: true,
+          },
+          {
+            name: 'location_latitude',
+            type: 'double precision',
+            isNullable: true,
+          },
+          {
+            name: 'location_longitude',
+            type: 'double precision',
+            isNullable: true,
+          },
+          {
             name: 'created_at',
             type: 'timestamptz',
             default: 'now()',

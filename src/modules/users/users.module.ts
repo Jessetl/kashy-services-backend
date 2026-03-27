@@ -7,6 +7,7 @@ import { SyncFirebaseUserUseCase } from './application/use-cases/sync-firebase-u
 import { GetUserByIdUseCase } from './application/use-cases/get-user-by-id.use-case.js';
 import { RegisterUserUseCase } from './application/use-cases/register-user.use-case.js';
 import { LoginUserUseCase } from './application/use-cases/login-user.use-case.js';
+import { RefreshUserTokenUseCase } from './application/use-cases/refresh-user-token.use-case.js';
 import { UsersController } from './infrastructure/controllers/users.controller.js';
 
 @Module({
@@ -21,6 +22,7 @@ import { UsersController } from './infrastructure/controllers/users.controller.j
     GetUserByIdUseCase,
     RegisterUserUseCase,
     LoginUserUseCase,
+    RefreshUserTokenUseCase,
   ],
   exports: [SyncFirebaseUserUseCase],
 })

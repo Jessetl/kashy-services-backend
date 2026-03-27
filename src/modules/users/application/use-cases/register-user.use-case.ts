@@ -24,12 +24,19 @@ export class RegisterUserUseCase implements UseCase<
   ) {}
 
   async execute(input: RegisterUserDto): Promise<UserResponseDto> {
+    const displayName = [input.firstName, input.lastName]
+      .filter((value): value is string => Boolean(value?.trim()))
+      .join(' ')
+      .trim();
+
     // Try-catch solo alrededor de la llamada a Firebase (infraestructura externa)
     let firebaseUser: admin.auth.UserRecord;
     try {
       firebaseUser = await this.firebaseAdmin.auth().createUser({
         email: input.email,
         password: input.password,
+        displayName: displayName || undefined,
+        photoURL: input.avatarUrl,
       });
     } catch (error) {
       // Firebase lanza errores tipados con code — los transformamos a excepciones de dominio
@@ -61,7 +68,15 @@ export class RegisterUserUseCase implements UseCase<
       throw new UserAlreadyExistsException(firebaseUser.uid);
     }
 
-    const user = User.create(randomUUID(), firebaseUser.uid, input.email);
+    const user = User.create(randomUUID(), firebaseUser.uid, input.email, {
+      firstName: input.firstName,
+      lastName: input.lastName,
+      avatarUrl: input.avatarUrl,
+      locationLabel: input.locationLabel,
+      locationLatitude: input.locationLatitude,
+      locationLongitude: input.locationLongitude,
+    });
+
     const saved = await this.userRepository.save(user);
     return UserMapper.toResponse(saved);
   }
