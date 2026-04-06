@@ -5,21 +5,22 @@ import type { IShoppingListRepository } from '../../domain/interfaces/repositori
 import { SHOPPING_LIST_REPOSITORY } from '../../domain/interfaces/repositories/shopping-list.repository.interface';
 import type { IExchangeRateProvider } from '../../../exchange-rates/domain/interfaces/exchange-rate-provider.interface';
 import { EXCHANGE_RATE_PROVIDER } from '../../../exchange-rates/domain/interfaces/exchange-rate-provider.interface';
-import { ShoppingList } from '../../domain/entities/shopping-list.entity';
 import { ShoppingItem } from '../../domain/entities/shopping-item.entity';
-import { CreateShoppingListDto } from '../dtos/create-shopping-list.dto';
-import { ShoppingListResponseDto } from '../dtos/shopping-list-response.dto';
+import { ShoppingListNotFoundException } from '../../domain/exceptions/shopping-list-not-found.exception';
+import { CreateShoppingItemDto } from '../dtos/create-shopping-item.dto';
+import { ShoppingItemResponseDto } from '../dtos/shopping-item-response.dto';
 import { ShoppingListMapper } from '../mappers/shopping-list.mapper';
 
-interface CreateShoppingListInput {
+interface AddItemsInput {
+  listId: string;
   userId: string;
-  dto: CreateShoppingListDto;
+  items: CreateShoppingItemDto[];
 }
 
 @Injectable()
-export class CreateShoppingListUseCase implements UseCase<
-  CreateShoppingListInput,
-  ShoppingListResponseDto
+export class AddItemsToShoppingListUseCase implements UseCase<
+  AddItemsInput,
+  ShoppingItemResponseDto[]
 > {
   constructor(
     @Inject(SHOPPING_LIST_REPOSITORY)
@@ -28,19 +29,23 @@ export class CreateShoppingListUseCase implements UseCase<
     private readonly exchangeRateProvider: IExchangeRateProvider,
   ) {}
 
-  async execute(
-    input: CreateShoppingListInput,
-  ): Promise<ShoppingListResponseDto> {
-    const listId = randomUUID();
+  async execute(input: AddItemsInput): Promise<ShoppingItemResponseDto[]> {
+    const list = await this.shoppingListRepository.findByIdAndUserId(
+      input.listId,
+      input.userId,
+    );
 
-    // Obtener tasa vigente para conversion automatica VES → USD
+    if (!list) {
+      throw new ShoppingListNotFoundException(input.listId);
+    }
+
     const exchangeRate = await this.exchangeRateProvider.getCurrent();
     const rateLocalPerUsd = exchangeRate.rateLocalPerUsd;
 
-    const items = (input.dto.items ?? []).map((itemDto) =>
+    const newItems = input.items.map((itemDto) =>
       ShoppingItem.create(
         randomUUID(),
-        listId,
+        input.listId,
         itemDto.productName,
         itemDto.category,
         itemDto.unitPriceLocal,
@@ -50,17 +55,15 @@ export class CreateShoppingListUseCase implements UseCase<
       ),
     );
 
-    const list = ShoppingList.create(
-      listId,
-      input.userId,
-      input.dto.name,
-      input.dto.storeName ?? null,
-      input.dto.ivaEnabled ?? false,
-      items,
-      rateLocalPerUsd,
+    const updatedList = list.addItems(newItems);
+
+    const savedItems = await this.shoppingListRepository.addItemsToList(
+      input.listId,
+      newItems,
+      updatedList.totalLocal,
+      updatedList.totalUsd,
     );
 
-    const saved = await this.shoppingListRepository.save(list);
-    return ShoppingListMapper.toResponse(saved);
+    return savedItems.map((item) => ShoppingListMapper.toItemResponse(item));
   }
 }

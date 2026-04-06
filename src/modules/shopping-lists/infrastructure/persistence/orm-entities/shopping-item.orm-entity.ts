@@ -19,25 +19,28 @@ export class ShoppingItemOrmEntity {
   @Column({ name: 'product_name', type: 'varchar' })
   productName: string;
 
+  @Column({ name: 'category', type: 'varchar' })
+  category: string;
+
   @Column({
-    name: 'unit_price_ves',
+    name: 'unit_price_local',
     type: 'decimal',
     precision: 18,
     scale: 2,
   })
-  unitPriceVes: number;
+  unitPriceLocal: number;
 
   @Column({ type: 'integer', default: 1 })
   quantity: number;
 
   @Column({
-    name: 'total_ves',
+    name: 'total_local',
     type: 'decimal',
     precision: 18,
     scale: 2,
     default: 0,
   })
-  totalVes: number;
+  totalLocal: number;
 
   @Column({
     name: 'unit_price_usd',
@@ -65,6 +68,8 @@ export class ShoppingItemOrmEntity {
 
   @ManyToOne(() => ShoppingListOrmEntity, (list) => list.items, {
     onDelete: 'CASCADE',
+    nullable: false,
+    orphanedRowAction: 'delete',
   })
   @JoinColumn({ name: 'list_id' })
   shoppingList: ShoppingListOrmEntity;

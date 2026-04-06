@@ -3,9 +3,10 @@ import { BaseEntity } from '../../../../shared-kernel/domain/base-entity';
 interface ShoppingItemProps {
   listId: string;
   productName: string;
-  unitPriceVes: number;
+  category: string;
+  unitPriceLocal: number;
   quantity: number;
-  totalVes: number;
+  totalLocal: number;
   unitPriceUsd: number | null;
   totalUsd: number | null;
   isPurchased: boolean;
@@ -15,9 +16,10 @@ interface ShoppingItemProps {
 export class ShoppingItem extends BaseEntity {
   readonly listId: string;
   readonly productName: string;
-  readonly unitPriceVes: number;
+  readonly category: string;
+  readonly unitPriceLocal: number;
   readonly quantity: number;
-  readonly totalVes: number;
+  readonly totalLocal: number;
   readonly unitPriceUsd: number | null;
   readonly totalUsd: number | null;
   readonly isPurchased: boolean;
@@ -27,9 +29,10 @@ export class ShoppingItem extends BaseEntity {
     super(id);
     this.listId = props.listId;
     this.productName = props.productName;
-    this.unitPriceVes = props.unitPriceVes;
+    this.category = props.category;
+    this.unitPriceLocal = props.unitPriceLocal;
     this.quantity = props.quantity;
-    this.totalVes = props.totalVes;
+    this.totalLocal = props.totalLocal;
     this.unitPriceUsd = props.unitPriceUsd;
     this.totalUsd = props.totalUsd;
     this.isPurchased = props.isPurchased;
@@ -39,17 +42,20 @@ export class ShoppingItem extends BaseEntity {
   /**
    * @param unitPriceUsd Si es null y rateVesPerUsd esta disponible, se calcula automaticamente.
    * @param rateVesPerUsd Tasa VES/USD vigente para conversion automatica.
+   * @param isPurchased Estado de compra (default false para items nuevos).
    */
   static create(
     id: string,
     listId: string,
     productName: string,
-    unitPriceVes: number,
+    category: string,
+    unitPriceLocal: number,
     quantity: number,
     unitPriceUsd: number | null = null,
     rateVesPerUsd: number | null = null,
+    isPurchased: boolean = false,
   ): ShoppingItem {
-    const totalVes = unitPriceVes * quantity;
+    const totalLocal = unitPriceLocal * quantity;
 
     // Si no se envia USD pero hay tasa disponible, calcular automaticamente
     let resolvedUnitPriceUsd = unitPriceUsd;
@@ -58,7 +64,7 @@ export class ShoppingItem extends BaseEntity {
       rateVesPerUsd !== null &&
       rateVesPerUsd > 0
     ) {
-      resolvedUnitPriceUsd = unitPriceVes / rateVesPerUsd;
+      resolvedUnitPriceUsd = unitPriceLocal / rateVesPerUsd;
     }
 
     const totalUsd =
@@ -67,14 +73,52 @@ export class ShoppingItem extends BaseEntity {
     return new ShoppingItem(id, {
       listId,
       productName,
-      unitPriceVes,
+      category,
+      unitPriceLocal,
       quantity,
-      totalVes,
+      totalLocal,
       unitPriceUsd: resolvedUnitPriceUsd,
       totalUsd,
-      isPurchased: false,
+      isPurchased,
       createdAt: new Date(),
     });
+  }
+
+  togglePurchased(): ShoppingItem {
+    return new ShoppingItem(this.id, {
+      listId: this.listId,
+      productName: this.productName,
+      category: this.category,
+      unitPriceLocal: this.unitPriceLocal,
+      quantity: this.quantity,
+      totalLocal: this.totalLocal,
+      unitPriceUsd: this.unitPriceUsd,
+      totalUsd: this.totalUsd,
+      isPurchased: !this.isPurchased,
+      createdAt: this.createdAt,
+    });
+  }
+
+  update(
+    productName: string,
+    category: string,
+    unitPriceLocal: number,
+    quantity: number,
+    unitPriceUsd: number | null,
+    rateVesPerUsd: number | null,
+    isPurchased: boolean,
+  ): ShoppingItem {
+    return ShoppingItem.create(
+      this.id,
+      this.listId,
+      productName,
+      category,
+      unitPriceLocal,
+      quantity,
+      unitPriceUsd,
+      rateVesPerUsd,
+      isPurchased,
+    );
   }
 
   static reconstitute(id: string, props: ShoppingItemProps): ShoppingItem {

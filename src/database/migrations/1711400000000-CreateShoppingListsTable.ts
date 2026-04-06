@@ -46,7 +46,7 @@ export class CreateShoppingListsTable1711400000000 implements MigrationInterface
             default: false,
           },
           {
-            name: 'total_ves',
+            name: 'total_local',
             type: 'decimal',
             precision: 18,
             scale: 2,

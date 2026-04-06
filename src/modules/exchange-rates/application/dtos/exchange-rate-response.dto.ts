@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class ExchangeRateResponseDto {
   @ApiProperty({ example: 468.5145 })
-  rateVesPerUsd: number;
+  rateLocalPerUsd: number;
 
   @ApiProperty({ example: 'oficial' })
   source: string;

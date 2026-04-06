@@ -12,7 +12,7 @@ export class ShoppingListMapper {
     dto.storeName = list.storeName;
     dto.status = list.status;
     dto.ivaEnabled = list.ivaEnabled;
-    dto.totalVes = list.totalVes;
+    dto.totalLocal = list.totalLocal;
     dto.totalUsd = list.totalUsd;
     dto.exchangeRateSnapshot = list.exchangeRateSnapshot;
     dto.createdAt = list.createdAt;
@@ -26,9 +26,10 @@ export class ShoppingListMapper {
     dto.id = item.id;
     dto.listId = item.listId;
     dto.productName = item.productName;
-    dto.unitPriceVes = item.unitPriceVes;
+    dto.category = item.category;
+    dto.unitPriceLocal = item.unitPriceLocal;
     dto.quantity = item.quantity;
-    dto.totalVes = item.totalVes;
+    dto.totalLocal = item.totalLocal;
     dto.unitPriceUsd = item.unitPriceUsd;
     dto.totalUsd = item.totalUsd;
     dto.isPurchased = item.isPurchased;

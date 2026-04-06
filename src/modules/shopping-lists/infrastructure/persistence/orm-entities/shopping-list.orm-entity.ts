@@ -36,13 +36,13 @@ export class ShoppingListOrmEntity {
   ivaEnabled: boolean;
 
   @Column({
-    name: 'total_ves',
+    name: 'total_local',
     type: 'decimal',
     precision: 18,
     scale: 2,
     default: 0,
   })
-  totalVes: number;
+  totalLocal: number;
 
   @Column({
     name: 'total_usd',
@@ -75,6 +75,7 @@ export class ShoppingListOrmEntity {
   @OneToMany(() => ShoppingItemOrmEntity, (item) => item.shoppingList, {
     cascade: true,
     eager: true,
+    orphanedRowAction: 'delete',
   })
   items: ShoppingItemOrmEntity[];
 }

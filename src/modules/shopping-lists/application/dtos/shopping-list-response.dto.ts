@@ -21,7 +21,7 @@ export class ShoppingListResponseDto {
   ivaEnabled: boolean;
 
   @ApiProperty({ example: 150.75 })
-  totalVes: number;
+  totalLocal: number;
 
   @ApiProperty({ example: 4.12 })
   totalUsd: number;

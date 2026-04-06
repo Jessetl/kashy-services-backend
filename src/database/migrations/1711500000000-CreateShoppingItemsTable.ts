@@ -29,7 +29,12 @@ export class CreateShoppingItemsTable1711500000000 implements MigrationInterface
             isNullable: false,
           },
           {
-            name: 'unit_price_ves',
+            name: 'category',
+            type: 'varchar',
+            isNullable: false,
+          },
+          {
+            name: 'unit_price_local',
             type: 'decimal',
             precision: 18,
             scale: 2,
@@ -41,7 +46,7 @@ export class CreateShoppingItemsTable1711500000000 implements MigrationInterface
             default: 1,
           },
           {
-            name: 'total_ves',
+            name: 'total_local',
             type: 'decimal',
             precision: 18,
             scale: 2,

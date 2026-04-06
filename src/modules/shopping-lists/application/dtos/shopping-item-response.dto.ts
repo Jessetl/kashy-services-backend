@@ -10,14 +10,17 @@ export class ShoppingItemResponseDto {
   @ApiProperty({ example: 'Harina PAN' })
   productName: string;
 
+  @ApiProperty({ example: 'Alimentos' })
+  category: string;
+
   @ApiProperty({ example: 45.5 })
-  unitPriceVes: number;
+  unitPriceLocal: number;
 
   @ApiProperty({ example: 2 })
   quantity: number;
 
   @ApiProperty({ example: 91.0 })
-  totalVes: number;
+  totalLocal: number;
 
   @ApiPropertyOptional({ example: 1.2, nullable: true })
   unitPriceUsd: number | null;

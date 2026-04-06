@@ -37,14 +37,14 @@ export class DolarApiExchangeRateProvider implements IExchangeRateProvider {
   async getCurrent(): Promise<ExchangeRate> {
     // 1. Intentar cache
     const cached = await this.cacheManager.get<{
-      rateVesPerUsd: number;
+      rateLocalPerUsd: number;
       source: string;
       fetchedAt: string;
     }>(CACHE_KEY);
 
     if (cached) {
       const rate = ExchangeRate.reconstitute(randomUUID(), {
-        rateVesPerUsd: cached.rateVesPerUsd,
+        rateLocalPerUsd: cached.rateLocalPerUsd,
         source: cached.source,
         fetchedAt: new Date(cached.fetchedAt),
       });
@@ -60,7 +60,7 @@ export class DolarApiExchangeRateProvider implements IExchangeRateProvider {
       await this.cacheManager.set(
         CACHE_KEY,
         {
-          rateVesPerUsd: rate.rateVesPerUsd,
+          rateLocalPerUsd: rate.rateLocalPerUsd,
           source: rate.source,
           fetchedAt: rate.fetchedAt.toISOString(),
         },

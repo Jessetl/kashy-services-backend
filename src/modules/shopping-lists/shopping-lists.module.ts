@@ -9,6 +9,15 @@ import { GetShoppingListsUseCase } from './application/use-cases/get-shopping-li
 import { GetShoppingListByIdUseCase } from './application/use-cases/get-shopping-list-by-id.use-case';
 import { UpdateShoppingListUseCase } from './application/use-cases/update-shopping-list.use-case';
 import { DeleteShoppingListUseCase } from './application/use-cases/delete-shopping-list.use-case';
+import { AddItemsToShoppingListUseCase } from './application/use-cases/add-items-to-shopping-list.use-case';
+import { EditShoppingItemUseCase } from './application/use-cases/edit-shopping-item.use-case';
+import { DeleteShoppingItemUseCase } from './application/use-cases/delete-shopping-item.use-case';
+import { ToggleShoppingItemUseCase } from './application/use-cases/toggle-shopping-item.use-case';
+import { CompleteShoppingListUseCase } from './application/use-cases/complete-shopping-list.use-case';
+import { GetShoppingListHistoryUseCase } from './application/use-cases/get-shopping-list-history.use-case';
+import { DuplicateShoppingListUseCase } from './application/use-cases/duplicate-shopping-list.use-case';
+import { CompareShoppingListsUseCase } from './application/use-cases/compare-shopping-lists.use-case';
+import { GetSpendingStatsUseCase } from './application/use-cases/get-spending-stats.use-case';
 import { ShoppingListsController } from './infrastructure/controllers/shopping-lists.controller';
 import { UsersModule } from '../users/users.module';
 import { ExchangeRatesModule } from '../exchange-rates/exchange-rates.module';
@@ -30,6 +39,15 @@ import { ExchangeRatesModule } from '../exchange-rates/exchange-rates.module';
     GetShoppingListByIdUseCase,
     UpdateShoppingListUseCase,
     DeleteShoppingListUseCase,
+    AddItemsToShoppingListUseCase,
+    EditShoppingItemUseCase,
+    DeleteShoppingItemUseCase,
+    ToggleShoppingItemUseCase,
+    CompleteShoppingListUseCase,
+    GetShoppingListHistoryUseCase,
+    DuplicateShoppingListUseCase,
+    CompareShoppingListsUseCase,
+    GetSpendingStatsUseCase,
   ],
   exports: [SHOPPING_LIST_REPOSITORY],
 })

@@ -1,16 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsInt,
   IsNumber,
   IsOptional,
-  IsBoolean,
   IsString,
   MaxLength,
   Min,
 } from 'class-validator';
 
-export class CreateShoppingItemDto {
+export class EditShoppingItemDto {
   @ApiProperty({ example: 'Harina PAN' })
   @IsString()
   @MaxLength(255)
@@ -34,26 +34,12 @@ export class CreateShoppingItemDto {
   @Min(1)
   quantity?: number;
 
-  @ApiProperty({ example: 91, nullable: true })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
-  totalLocal: number;
-
   @ApiPropertyOptional({ example: 1.2, nullable: true })
   @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 4 })
   @Min(0)
   unitPriceUsd?: number;
-
-  @ApiPropertyOptional({ example: 2.4, nullable: true })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 4 })
-  @Min(0)
-  totalUsd?: number;
 
   @ApiPropertyOptional({ example: false, default: false })
   @IsOptional()

@@ -9,9 +9,10 @@ export class ShoppingListPersistenceMapper {
       ShoppingItem.reconstitute(itemOrm.id, {
         listId: itemOrm.listId,
         productName: itemOrm.productName,
-        unitPriceVes: Number(itemOrm.unitPriceVes),
+        category: itemOrm.category,
+        unitPriceLocal: Number(itemOrm.unitPriceLocal),
         quantity: itemOrm.quantity,
-        totalVes: Number(itemOrm.totalVes),
+        totalLocal: Number(itemOrm.totalLocal),
         unitPriceUsd:
           itemOrm.unitPriceUsd !== null ? Number(itemOrm.unitPriceUsd) : null,
         totalUsd: itemOrm.totalUsd !== null ? Number(itemOrm.totalUsd) : null,
@@ -26,7 +27,7 @@ export class ShoppingListPersistenceMapper {
       storeName: orm.storeName,
       status: orm.status,
       ivaEnabled: orm.ivaEnabled,
-      totalVes: Number(orm.totalVes),
+      totalLocal: Number(orm.totalLocal),
       totalUsd: Number(orm.totalUsd),
       exchangeRateSnapshot:
         orm.exchangeRateSnapshot !== null
@@ -46,7 +47,7 @@ export class ShoppingListPersistenceMapper {
     orm.storeName = list.storeName;
     orm.status = list.status;
     orm.ivaEnabled = list.ivaEnabled;
-    orm.totalVes = list.totalVes;
+    orm.totalLocal = list.totalLocal;
     orm.totalUsd = list.totalUsd;
     orm.exchangeRateSnapshot = list.exchangeRateSnapshot;
     orm.createdAt = list.createdAt;
@@ -60,9 +61,10 @@ export class ShoppingListPersistenceMapper {
     orm.id = item.id;
     orm.listId = item.listId;
     orm.productName = item.productName;
-    orm.unitPriceVes = item.unitPriceVes;
+    orm.category = item.category;
+    orm.unitPriceLocal = item.unitPriceLocal;
     orm.quantity = item.quantity;
-    orm.totalVes = item.totalVes;
+    orm.totalLocal = item.totalLocal;
     orm.unitPriceUsd = item.unitPriceUsd;
     orm.totalUsd = item.totalUsd;
     orm.isPurchased = item.isPurchased;
