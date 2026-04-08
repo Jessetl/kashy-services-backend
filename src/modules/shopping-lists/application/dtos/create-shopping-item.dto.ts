@@ -14,18 +14,18 @@ export class CreateShoppingItemDto {
   @ApiProperty({ example: 'Harina PAN' })
   @IsString()
   @MaxLength(255)
-  productName: string;
+  productName!: string;
 
   @ApiProperty({ example: 'Comida' })
   @IsString()
   @MaxLength(255)
-  category: string;
+  category!: string;
 
   @ApiProperty({ example: 45.5 })
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  unitPriceLocal: number;
+  unitPriceLocal!: number;
 
   @ApiProperty({ example: 2, default: 1 })
   @IsOptional()
@@ -39,7 +39,7 @@ export class CreateShoppingItemDto {
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  totalLocal: number;
+  totalLocal!: number;
 
   @ApiPropertyOptional({ example: 1.2, nullable: true })
   @IsOptional()

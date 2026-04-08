@@ -9,5 +9,5 @@ export class AddShoppingItemsDto {
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => CreateShoppingItemDto)
-  items: CreateShoppingItemDto[];
+  items!: CreateShoppingItemDto[];
 }

@@ -13,9 +13,10 @@ interface DuplicateShoppingListInput {
 }
 
 @Injectable()
-export class DuplicateShoppingListUseCase
-  implements UseCase<DuplicateShoppingListInput, ShoppingListResponseDto>
-{
+export class DuplicateShoppingListUseCase implements UseCase<
+  DuplicateShoppingListInput,
+  ShoppingListResponseDto
+> {
   constructor(
     @Inject(SHOPPING_LIST_REPOSITORY)
     private readonly shoppingListRepository: IShoppingListRepository,

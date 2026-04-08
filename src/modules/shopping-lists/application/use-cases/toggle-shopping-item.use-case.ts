@@ -14,9 +14,10 @@ interface ToggleShoppingItemInput {
 }
 
 @Injectable()
-export class ToggleShoppingItemUseCase
-  implements UseCase<ToggleShoppingItemInput, ShoppingListResponseDto>
-{
+export class ToggleShoppingItemUseCase implements UseCase<
+  ToggleShoppingItemInput,
+  ShoppingListResponseDto
+> {
   constructor(
     @Inject(SHOPPING_LIST_REPOSITORY)
     private readonly shoppingListRepository: IShoppingListRepository,

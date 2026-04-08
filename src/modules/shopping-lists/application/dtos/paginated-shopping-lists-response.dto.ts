@@ -3,14 +3,14 @@ import { ShoppingListResponseDto } from './shopping-list-response.dto';
 
 export class PaginatedShoppingListsResponseDto {
   @ApiProperty({ type: [ShoppingListResponseDto] })
-  data: ShoppingListResponseDto[];
+  data!: ShoppingListResponseDto[];
 
   @ApiProperty({ example: 25 })
-  total: number;
+  total!: number;
 
   @ApiProperty({ example: 1 })
-  page: number;
+  page!: number;
 
   @ApiProperty({ example: 10 })
-  limit: number;
+  limit!: number;
 }

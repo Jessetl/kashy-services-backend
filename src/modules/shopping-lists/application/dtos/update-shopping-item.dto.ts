@@ -27,18 +27,18 @@ export class UpdateShoppingItemDto {
   @ApiProperty({ example: 'Harina PAN' })
   @IsString()
   @MaxLength(255)
-  productName: string;
+  productName!: string;
 
   @ApiProperty({ example: 'Alimentos' })
   @IsString()
   @MaxLength(100)
-  category: string;
+  category!: string;
 
   @ApiProperty({ example: 45.5 })
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  unitPriceLocal: number;
+  unitPriceLocal!: number;
 
   @ApiProperty({ example: 2, default: 1 })
   @IsOptional()

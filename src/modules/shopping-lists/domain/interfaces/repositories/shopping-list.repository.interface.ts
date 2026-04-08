@@ -12,7 +12,7 @@ export interface PaginatedResult<T> {
 
 export interface SpendingStatRow {
   period: string;
-  totalVes: number;
+  totalLocal: number;
   totalUsd: number;
   listCount: number;
 }

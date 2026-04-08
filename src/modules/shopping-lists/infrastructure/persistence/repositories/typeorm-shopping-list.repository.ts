@@ -108,7 +108,7 @@ export class TypeOrmShoppingListRepository implements IShoppingListRepository {
     const rows = await this.ormRepository
       .createQueryBuilder('sl')
       .select(`date_trunc('${truncUnit}', sl.completed_at)`, 'period')
-      .addSelect('SUM(sl.total_ves)', 'totalVes')
+      .addSelect('SUM(sl.total_local)', 'totalLocal')
       .addSelect('SUM(sl.total_usd)', 'totalUsd')
       .addSelect('COUNT(sl.id)', 'listCount')
       .where('sl.user_id = :userId', { userId })
@@ -119,14 +119,14 @@ export class TypeOrmShoppingListRepository implements IShoppingListRepository {
       .limit(12)
       .getRawMany<{
         period: string;
-        totalVes: string;
+        totalLocal: string;
         totalUsd: string;
         listCount: string;
       }>();
 
     return rows.map((row) => ({
       period: row.period,
-      totalVes: Number(row.totalVes),
+      totalLocal: Number(row.totalLocal),
       totalUsd: Number(row.totalUsd),
       listCount: Number(row.listCount),
     }));

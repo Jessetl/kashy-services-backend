@@ -13,9 +13,10 @@ interface GetSpendingStatsInput {
 }
 
 @Injectable()
-export class GetSpendingStatsUseCase
-  implements UseCase<GetSpendingStatsInput, SpendingStatsResponseDto>
-{
+export class GetSpendingStatsUseCase implements UseCase<
+  GetSpendingStatsInput,
+  SpendingStatsResponseDto
+> {
   constructor(
     @Inject(SHOPPING_LIST_REPOSITORY)
     private readonly shoppingListRepository: IShoppingListRepository,
@@ -34,7 +35,7 @@ export class GetSpendingStatsUseCase
     response.stats = rows.map((row) => {
       const stat = new SpendingStatDto();
       stat.period = row.period;
-      stat.totalVes = row.totalVes;
+      stat.totalLocal = row.totalLocal;
       stat.totalUsd = row.totalUsd;
       stat.listCount = row.listCount;
       return stat;

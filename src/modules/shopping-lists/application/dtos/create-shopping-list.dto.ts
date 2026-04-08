@@ -14,7 +14,7 @@ export class CreateShoppingListDto {
   @ApiProperty({ example: 'Compra semanal' })
   @IsString()
   @MaxLength(255)
-  name: string;
+  name!: string;
 
   @ApiPropertyOptional({ example: 'Supermercado Central' })
   @IsOptional()
