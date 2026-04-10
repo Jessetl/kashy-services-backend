@@ -15,12 +15,12 @@ import {
 export class RegisterUserDto {
   @ApiProperty({ example: 'user@example.com' })
   @IsEmail()
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: '123456', minLength: 6 })
   @IsString()
   @MinLength(6)
-  password: string;
+  password!: string;
 
   @ApiProperty({ example: 'Juan', required: false })
   @IsOptional()
@@ -38,6 +38,11 @@ export class RegisterUserDto {
   @IsOptional()
   @IsUrl({ require_tld: false })
   avatarUrl?: string;
+
+  @ApiProperty({ example: 'VE' })
+  @IsString()
+  @MaxLength(2)
+  country!: string;
 
   @ApiProperty({ example: 'Monterrey, NL', required: false })
   @IsOptional()

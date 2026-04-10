@@ -1,6 +1,7 @@
 import { BaseEntity } from '../../../../shared-kernel/domain/base-entity';
 
 interface UserProfileProps {
+  country: string;
   firstName?: string | null;
   lastName?: string | null;
   avatarUrl?: string | null;
@@ -15,6 +16,7 @@ export class User extends BaseEntity {
   readonly firstName: string | null;
   readonly lastName: string | null;
   readonly avatarUrl: string | null;
+  readonly country: string;
   readonly locationLabel: string | null;
   readonly locationLatitude: number | null;
   readonly locationLongitude: number | null;
@@ -35,6 +37,7 @@ export class User extends BaseEntity {
     this.firstName = profile.firstName ?? null;
     this.lastName = profile.lastName ?? null;
     this.avatarUrl = profile.avatarUrl ?? null;
+    this.country = profile.country;
     this.locationLabel = profile.locationLabel ?? null;
     this.locationLatitude = profile.locationLatitude ?? null;
     this.locationLongitude = profile.locationLongitude ?? null;
@@ -46,7 +49,7 @@ export class User extends BaseEntity {
     id: string,
     firebaseUid: string,
     email: string,
-    profile: UserProfileProps = {},
+    profile: UserProfileProps,
   ): User {
     const now = new Date();
     return new User(id, firebaseUid, email, profile, now, now);

@@ -31,6 +31,7 @@ export class SyncFirebaseUserUseCase implements UseCase<
       firstName: input.firstName,
       lastName: input.lastName,
       avatarUrl: input.avatarUrl,
+      country: 'VE',
       locationLabel: input.locationLabel,
       locationLatitude: input.locationLatitude,
       locationLongitude: input.locationLongitude,

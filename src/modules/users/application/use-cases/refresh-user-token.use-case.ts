@@ -1,12 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { randomUUID } from 'crypto';
 import { UseCase } from '../../../../shared-kernel/application/use-case';
 import { UnauthorizedException } from '../../../../shared-kernel/domain/exceptions/unauthorized.exception';
 import { ExternalServiceException } from '../../../../shared-kernel/domain/exceptions/external-service.exception';
 import type { IUserRepository } from '../../domain/interfaces/repositories/user.repository.interface';
 import { USER_REPOSITORY } from '../../domain/interfaces/repositories/user.repository.interface';
-import { User } from '../../domain/entities/user.entity';
 import { RefreshTokenDto } from '../dtos/refresh-token.dto';
 import { LoginResponseDto } from '../dtos/login-response.dto';
 import { UserMapper } from '../mappers/user.mapper';
@@ -24,12 +22,6 @@ interface FirebaseRefreshErrorResponse {
   error?: {
     message?: string;
   };
-}
-
-interface FirebaseIdTokenPayload {
-  email?: string;
-  name?: string;
-  picture?: string;
 }
 
 @Injectable()
@@ -105,49 +97,17 @@ export class RefreshUserTokenUseCase implements UseCase<
 
     const data = (await response.json()) as FirebaseRefreshResponse;
 
-    let user = await this.userRepository.findByFirebaseUid(data.user_id);
+    const user = await this.userRepository.findByFirebaseUid(data.user_id);
 
     if (!user) {
-      const payload = this.decodeJwtPayload(data.id_token);
-      const email = payload?.email;
-
-      if (email) {
-        const [firstName, ...lastNameParts] = (payload?.name || '')
-          .trim()
-          .split(/\s+/);
-
-        user = await this.userRepository.save(
-          User.create(randomUUID(), data.user_id, email, {
-            firstName: firstName || undefined,
-            lastName:
-              lastNameParts.length > 0 ? lastNameParts.join(' ') : undefined,
-            avatarUrl: payload?.picture,
-          }),
-        );
-      }
+      throw new UnauthorizedException('User not found');
     }
 
     const dto = new LoginResponseDto();
     dto.idToken = data.id_token;
     dto.refreshToken = data.refresh_token;
     dto.expiresIn = data.expires_in;
-    if (user) {
-      dto.user = UserMapper.toResponse(user);
-    }
+    dto.user = UserMapper.toResponse(user);
     return dto;
-  }
-
-  private decodeJwtPayload(token: string): FirebaseIdTokenPayload | null {
-    const parts = token.split('.');
-    if (parts.length < 2 || !parts[1]) {
-      return null;
-    }
-
-    try {
-      const payload = Buffer.from(parts[1], 'base64url').toString('utf-8');
-      return JSON.parse(payload) as FirebaseIdTokenPayload;
-    } catch {
-      return null;
-    }
   }
 }

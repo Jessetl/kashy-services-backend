@@ -72,6 +72,7 @@ export class RegisterUserUseCase implements UseCase<
       firstName: input.firstName,
       lastName: input.lastName,
       avatarUrl: input.avatarUrl,
+      country: input.country,
       locationLabel: input.locationLabel,
       locationLatitude: input.locationLatitude,
       locationLongitude: input.locationLongitude,

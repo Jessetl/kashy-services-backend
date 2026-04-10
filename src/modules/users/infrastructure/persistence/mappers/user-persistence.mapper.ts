@@ -11,6 +11,7 @@ export class UserPersistenceMapper {
         firstName: orm.firstName,
         lastName: orm.lastName,
         avatarUrl: orm.avatarUrl,
+        country: orm.country,
         locationLabel: orm.locationLabel,
         locationLatitude: orm.locationLatitude,
         locationLongitude: orm.locationLongitude,
@@ -28,6 +29,7 @@ export class UserPersistenceMapper {
     orm.firstName = user.firstName;
     orm.lastName = user.lastName;
     orm.avatarUrl = user.avatarUrl;
+    orm.country = user.country;
     orm.locationLabel = user.locationLabel;
     orm.locationLatitude = user.locationLatitude;
     orm.locationLongitude = user.locationLongitude;

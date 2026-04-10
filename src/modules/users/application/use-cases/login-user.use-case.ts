@@ -1,12 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { randomUUID } from 'crypto';
 import { UseCase } from '../../../../shared-kernel/application/use-case';
 import { UnauthorizedException } from '../../../../shared-kernel/domain/exceptions/unauthorized.exception';
 import { ExternalServiceException } from '../../../../shared-kernel/domain/exceptions/external-service.exception';
 import type { IUserRepository } from '../../domain/interfaces/repositories/user.repository.interface';
 import { USER_REPOSITORY } from '../../domain/interfaces/repositories/user.repository.interface';
-import { User } from '../../domain/entities/user.entity';
 import { LoginUserDto } from '../dtos/login-user.dto';
 import { LoginResponseDto } from '../dtos/login-response.dto';
 import { UserMapper } from '../mappers/user.mapper';
@@ -98,23 +96,9 @@ export class LoginUserUseCase implements UseCase<
 
     const data = (await response.json()) as FirebaseSignInResponse;
 
-    let user = await this.userRepository.findByFirebaseUid(data.localId);
+    const user = await this.userRepository.findByFirebaseUid(data.localId);
     if (!user) {
-      const [firstName, ...lastNameParts] = (data.displayName || '')
-        .trim()
-        .split(/\s+/);
-
-      const parsedFirstName = firstName || undefined;
-      const parsedLastName =
-        lastNameParts.length > 0 ? lastNameParts.join(' ') : undefined;
-
-      user = await this.userRepository.save(
-        User.create(randomUUID(), data.localId, data.email ?? input.email, {
-          firstName: parsedFirstName,
-          lastName: parsedLastName,
-          avatarUrl: data.photoUrl,
-        }),
-      );
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     const dto = new LoginResponseDto();

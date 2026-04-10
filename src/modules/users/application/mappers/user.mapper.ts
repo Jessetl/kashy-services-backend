@@ -10,6 +10,7 @@ export class UserMapper {
     dto.firstName = user.firstName;
     dto.lastName = user.lastName;
     dto.avatarUrl = user.avatarUrl;
+    dto.country = user.country;
     dto.locationLabel = user.locationLabel;
     dto.locationLatitude = user.locationLatitude;
     dto.locationLongitude = user.locationLongitude;

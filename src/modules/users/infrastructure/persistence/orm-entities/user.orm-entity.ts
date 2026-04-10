@@ -28,11 +28,9 @@ export class UserOrmEntity {
 
   @Column({
     name: 'country',
-    type: 'enum',
-    enum: ['VE', 'AR', 'CH', 'CO', 'PE', 'BR'],
-    default: 'VE',
+    type: 'varchar',
   })
-  country!: 'VE' | 'AR' | 'CH' | 'CO' | 'PE' | 'BR';
+  country!: string;
 
   @Column({ name: 'location_label', type: 'varchar', nullable: true })
   locationLabel!: string | null;
