@@ -6,7 +6,9 @@ import {
   HttpStatus,
   Param,
   Post,
+  Put,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -22,11 +24,21 @@ import { GetUserByIdUseCase } from '../../application/use-cases/get-user-by-id.u
 import { RegisterUserUseCase } from '../../application/use-cases/register-user.use-case';
 import { LoginUserUseCase } from '../../application/use-cases/login-user.use-case';
 import { RefreshUserTokenUseCase } from '../../application/use-cases/refresh-user-token.use-case';
+import { GetNotificationPreferencesUseCase } from '../../application/use-cases/get-notification-preferences.use-case';
+import { UpdateNotificationPreferencesUseCase } from '../../application/use-cases/update-notification-preferences.use-case';
+import { SeedLoginUseCase } from '../../application/use-cases/seed-login.use-case';
+import { UpdateProfileUseCase } from '../../application/use-cases/update-profile.use-case';
+import { ChangePasswordUseCase } from '../../application/use-cases/change-password.use-case';
 import { RegisterUserDto } from '../../application/dtos/register-user.dto';
 import { LoginUserDto } from '../../application/dtos/login-user.dto';
 import { RefreshTokenDto } from '../../application/dtos/refresh-token.dto';
+import { UpdateNotificationPreferencesDto } from '../../application/dtos/update-notification-preferences.dto';
+import { SeedLoginDto } from '../../application/dtos/seed-login.dto';
+import { UpdateProfileDto } from '../../application/dtos/update-profile.dto';
+import { ChangePasswordDto } from '../../application/dtos/change-password.dto';
 import { UserResponseDto } from '../../application/dtos/user-response.dto';
 import { LoginResponseDto } from '../../application/dtos/login-response.dto';
+import { NotificationPreferencesResponseDto } from '../../application/dtos/notification-preferences-response.dto';
 import type { FirebaseUser } from '../../../../shared-kernel/infrastructure/guards/firebase-auth.guard';
 
 @ApiTags('Users')
@@ -38,6 +50,11 @@ export class UsersController {
     private readonly registerUser: RegisterUserUseCase,
     private readonly loginUser: LoginUserUseCase,
     private readonly refreshUserToken: RefreshUserTokenUseCase,
+    private readonly getNotificationPreferences: GetNotificationPreferencesUseCase,
+    private readonly updateNotificationPreferences: UpdateNotificationPreferencesUseCase,
+    private readonly seedLogin: SeedLoginUseCase,
+    private readonly updateProfile: UpdateProfileUseCase,
+    private readonly changePassword: ChangePasswordUseCase,
   ) {}
 
   @Public()
@@ -67,6 +84,22 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'Credenciales invalidas' })
   async login(@Body() dto: LoginUserDto) {
     return this.loginUser.execute(dto);
+  }
+
+  @Public()
+  @Post('seed-login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '[DEV ONLY] Iniciar sesion con firebase_uid de un usuario seed',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Login seed exitoso',
+    type: UserResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Usuario no encontrado o entorno no es development' })
+  async seedLoginEndpoint(@Body() dto: SeedLoginDto) {
+    return this.seedLogin.execute(dto);
   }
 
   @Public()
@@ -109,6 +142,80 @@ export class UsersController {
     return this.syncFirebaseUser.execute({
       firebaseUid: user.uid,
       email,
+    });
+  }
+
+  @Put('me')
+  @ApiBearerAuth('firebase-token')
+  @ApiOperation({ summary: 'Actualizar perfil del usuario (nombre, apellido, avatar, país, contraseña)' })
+  @ApiResponse({ status: 200, description: 'Perfil actualizado', type: UserResponseDto })
+  @ApiResponse({ status: 400, description: 'Datos de entrada inválidos' })
+  @ApiResponse({ status: 401, description: 'Token inválido o ausente' })
+  async updateMe(
+    @CurrentUser() user: FirebaseUser,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    if (!user.uid) {
+      throw new ForbiddenException('Invalid token payload');
+    }
+    return this.updateProfile.execute({ firebaseUid: user.uid, dto });
+  }
+
+  @Put('me/password')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('firebase-token')
+  @ApiOperation({ summary: 'Cambiar contraseña del usuario autenticado' })
+  @ApiResponse({ status: 200, description: 'Contraseña actualizada' })
+  @ApiResponse({ status: 401, description: 'Contraseña actual incorrecta o token inválido' })
+  @ApiResponse({ status: 503, description: 'Error al conectar con Firebase' })
+  async changePasswordEndpoint(
+    @CurrentUser() user: FirebaseUser,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    await this.changePassword.execute({ firebaseUid: user.uid, dto });
+    return { success: true, message: 'Password updated successfully' };
+  }
+
+  @Get('me/notification-preferences')
+  @ApiBearerAuth('firebase-token')
+  @ApiOperation({ summary: 'Obtener preferencias de notificacion del usuario' })
+  @ApiResponse({
+    status: 200,
+    description: 'Preferencias de notificacion',
+    type: NotificationPreferencesResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Token invalido o ausente' })
+  @ApiResponse({ status: 404, description: 'Preferencias no encontradas' })
+  async getNotificationPrefs(@CurrentUser() user: FirebaseUser) {
+    const localUser = await this.syncFirebaseUser.execute({
+      firebaseUid: user.uid,
+      email: user.email!,
+    });
+    return this.getNotificationPreferences.execute(localUser.id);
+  }
+
+  @Put('me/notification-preferences')
+  @ApiBearerAuth('firebase-token')
+  @ApiOperation({ summary: 'Actualizar preferencias de notificacion (parcial)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Preferencias actualizadas',
+    type: NotificationPreferencesResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'Token invalido o ausente' })
+  @ApiResponse({ status: 404, description: 'Preferencias no encontradas' })
+  @ApiResponse({ status: 422, description: 'Valor invalido' })
+  async updateNotificationPrefs(
+    @CurrentUser() user: FirebaseUser,
+    @Body() dto: UpdateNotificationPreferencesDto,
+  ) {
+    const localUser = await this.syncFirebaseUser.execute({
+      firebaseUid: user.uid,
+      email: user.email!,
+    });
+    return this.updateNotificationPreferences.execute({
+      userId: localUser.id,
+      dto,
     });
   }
 

@@ -49,6 +49,7 @@ import { DebtsModule } from '../debts/debts.module';
     NotificationCronService,
   ],
   exports: [
+    NOTIFICATION_REPOSITORY,
     ScheduleDebtNotificationUseCase,
     CancelDebtNotificationsUseCase,
   ],

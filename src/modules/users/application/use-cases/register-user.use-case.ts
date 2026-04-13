@@ -5,7 +5,10 @@ import { UseCase } from '../../../../shared-kernel/application/use-case';
 import { FIREBASE_ADMIN } from '../../../../shared-kernel/infrastructure/firebase/firebase-admin.provider';
 import type { IUserRepository } from '../../domain/interfaces/repositories/user.repository.interface';
 import { USER_REPOSITORY } from '../../domain/interfaces/repositories/user.repository.interface';
+import type { INotificationPreferencesRepository } from '../../domain/interfaces/repositories/notification-preferences.repository.interface';
+import { NOTIFICATION_PREFERENCES_REPOSITORY } from '../../domain/interfaces/repositories/notification-preferences.repository.interface';
 import { User } from '../../domain/entities/user.entity';
+import { NotificationPreferences } from '../../domain/entities/notification-preferences.entity';
 import { RegisterUserDto } from '../dtos/register-user.dto';
 import { UserResponseDto } from '../dtos/user-response.dto';
 import { UserMapper } from '../mappers/user.mapper';
@@ -21,6 +24,8 @@ export class RegisterUserUseCase implements UseCase<
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
     @Inject(FIREBASE_ADMIN) private readonly firebaseAdmin: typeof admin,
+    @Inject(NOTIFICATION_PREFERENCES_REPOSITORY)
+    private readonly prefsRepository: INotificationPreferencesRepository,
   ) {}
 
   async execute(input: RegisterUserDto): Promise<UserResponseDto> {
@@ -68,7 +73,8 @@ export class RegisterUserUseCase implements UseCase<
       throw new UserAlreadyExistsException(firebaseUser.uid);
     }
 
-    const user = User.create(randomUUID(), firebaseUser.uid, input.email, {
+    const userId = randomUUID();
+    const user = User.create(userId, firebaseUser.uid, input.email, {
       firstName: input.firstName,
       lastName: input.lastName,
       avatarUrl: input.avatarUrl,
@@ -79,6 +85,14 @@ export class RegisterUserUseCase implements UseCase<
     });
 
     const saved = await this.userRepository.save(user);
+
+    // Auto-create default notification preferences for the new user
+    const defaultPrefs = NotificationPreferences.createDefaults(
+      randomUUID(),
+      saved.id,
+    );
+    await this.prefsRepository.save(defaultPrefs);
+
     return UserMapper.toResponse(saved);
   }
 }

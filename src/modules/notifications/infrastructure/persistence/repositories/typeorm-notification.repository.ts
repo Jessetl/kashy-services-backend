@@ -47,4 +47,11 @@ export class TypeOrmNotificationRepository implements INotificationRepository {
   async deleteByDebtId(debtId: string): Promise<void> {
     await this.ormRepository.delete({ debtId });
   }
+
+  async deleteByUserId(userId: string): Promise<void> {
+    await this.ormRepository.delete({
+      userId,
+      status: NotificationStatus.PENDING,
+    });
+  }
 }

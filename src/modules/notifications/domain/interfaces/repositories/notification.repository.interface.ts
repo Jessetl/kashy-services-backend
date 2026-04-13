@@ -8,4 +8,5 @@ export interface INotificationRepository {
   findByDebtId(debtId: string): Promise<Notification[]>;
   save(notification: Notification): Promise<Notification>;
   deleteByDebtId(debtId: string): Promise<void>;
+  deleteByUserId(userId: string): Promise<void>;
 }

@@ -21,7 +21,9 @@
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js -d src/database/data-source.ts",
     "migration:generate": "npm run typeorm -- migration:generate",
     "migration:run": "npm run typeorm -- migration:run",
-    "migration:revert": "npm run typeorm -- migration:revert"
+    "migration:revert": "npm run typeorm -- migration:revert",
+    "seed": "ts-node -r tsconfig-paths/register src/database/seeds/seed-runner.ts",
+    "seed:clean": "ts-node -r tsconfig-paths/register src/database/seeds/seed-runner.ts --clean"
   },
   "dependencies": {
     "@nestjs/cache-manager": "^3.1.0",

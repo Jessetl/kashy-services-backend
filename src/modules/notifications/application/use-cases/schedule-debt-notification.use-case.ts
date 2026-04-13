@@ -3,8 +3,8 @@ import { randomUUID } from 'crypto';
 import { UseCase } from '../../../../shared-kernel/application/use-case';
 import type { INotificationRepository } from '../../domain/interfaces/repositories/notification.repository.interface';
 import { NOTIFICATION_REPOSITORY } from '../../domain/interfaces/repositories/notification.repository.interface';
-import type { IUserRepository } from '../../../users/domain/interfaces/repositories/user.repository.interface';
-import { USER_REPOSITORY } from '../../../users/domain/interfaces/repositories/user.repository.interface';
+import type { INotificationPreferencesRepository } from '../../../users/domain/interfaces/repositories/notification-preferences.repository.interface';
+import { NOTIFICATION_PREFERENCES_REPOSITORY } from '../../../users/domain/interfaces/repositories/notification-preferences.repository.interface';
 import { Notification } from '../../domain/entities/notification.entity';
 import { NotificationResponseDto } from '../dtos/notification-response.dto';
 import { NotificationMapper } from '../mappers/notification.mapper';
@@ -22,15 +22,15 @@ export class ScheduleDebtNotificationUseCase
   constructor(
     @Inject(NOTIFICATION_REPOSITORY)
     private readonly notificationRepository: INotificationRepository,
-    @Inject(USER_REPOSITORY)
-    private readonly userRepository: IUserRepository,
+    @Inject(NOTIFICATION_PREFERENCES_REPOSITORY)
+    private readonly prefsRepository: INotificationPreferencesRepository,
   ) {}
 
   async execute(
     input: ScheduleDebtNotificationInput,
   ): Promise<NotificationResponseDto | null> {
-    const user = await this.userRepository.findById(input.userId);
-    if (!user || !user.notificationEnabled) {
+    const prefs = await this.prefsRepository.findByUserId(input.userId);
+    if (!prefs || !prefs.pushEnabled || !prefs.debtReminders) {
       return null;
     }
 

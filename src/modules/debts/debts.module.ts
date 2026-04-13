@@ -16,7 +16,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([DebtOrmEntity]),
-    UsersModule,
+    forwardRef(() => UsersModule),
     forwardRef(() => NotificationsModule),
   ],
   controllers: [DebtsController],

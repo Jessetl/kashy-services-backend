@@ -61,6 +61,32 @@ export class User extends BaseEntity {
     return new User(id, firebaseUid, email, profile, now, now);
   }
 
+  updateProfile(changes: {
+    firstName?: string | null;
+    lastName?: string | null;
+    avatarUrl?: string | null;
+    country?: string;
+  }): User {
+    return new User(
+      this.id,
+      this.firebaseUid,
+      this.email,
+      {
+        firstName: 'firstName' in changes ? changes.firstName : this.firstName,
+        lastName: 'lastName' in changes ? changes.lastName : this.lastName,
+        avatarUrl: 'avatarUrl' in changes ? changes.avatarUrl : this.avatarUrl,
+        country: changes.country ?? this.country,
+        locationLabel: this.locationLabel,
+        locationLatitude: this.locationLatitude,
+        locationLongitude: this.locationLongitude,
+        notificationEnabled: this.notificationEnabled,
+        fcmToken: this.fcmToken,
+      },
+      this.createdAt,
+      new Date(),
+    );
+  }
+
   static reconstitute(
     id: string,
     firebaseUid: string,

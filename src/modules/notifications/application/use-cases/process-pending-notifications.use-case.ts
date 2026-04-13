@@ -6,6 +6,8 @@ import type { INotificationQueueService } from '../../domain/interfaces/notifica
 import { NOTIFICATION_QUEUE_SERVICE } from '../../domain/interfaces/notification-queue.service.interface';
 import type { IUserRepository } from '../../../users/domain/interfaces/repositories/user.repository.interface';
 import { USER_REPOSITORY } from '../../../users/domain/interfaces/repositories/user.repository.interface';
+import type { INotificationPreferencesRepository } from '../../../users/domain/interfaces/repositories/notification-preferences.repository.interface';
+import { NOTIFICATION_PREFERENCES_REPOSITORY } from '../../../users/domain/interfaces/repositories/notification-preferences.repository.interface';
 import type { IDebtRepository } from '../../../debts/domain/interfaces/repositories/debt.repository.interface';
 import { DEBT_REPOSITORY } from '../../../debts/domain/interfaces/repositories/debt.repository.interface';
 
@@ -22,6 +24,8 @@ export class ProcessPendingNotificationsUseCase
     private readonly queueService: INotificationQueueService,
     @Inject(USER_REPOSITORY)
     private readonly userRepository: IUserRepository,
+    @Inject(NOTIFICATION_PREFERENCES_REPOSITORY)
+    private readonly prefsRepository: INotificationPreferencesRepository,
     @Inject(DEBT_REPOSITORY)
     private readonly debtRepository: IDebtRepository,
   ) {}
@@ -37,9 +41,10 @@ export class ProcessPendingNotificationsUseCase
     for (const notification of pending) {
       try {
         const user = await this.userRepository.findById(notification.userId);
-        if (!user || !user.notificationEnabled || !user.fcmToken) {
-          continue;
-        }
+        if (!user || !user.fcmToken) continue;
+
+        const prefs = await this.prefsRepository.findByUserId(notification.userId);
+        if (!prefs || !prefs.pushEnabled || !prefs.debtReminders) continue;
 
         const debt = await this.debtRepository.findById(notification.debtId);
         if (!debt) continue;
