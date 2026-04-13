@@ -1,97 +1,67 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { ConfigService } from '@nestjs/config';
-import type { Cache } from 'cache-manager';
+import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { IExchangeRateProvider } from '../../../../shared-kernel/domain/interfaces/exchange-rate-provider.interface';
 import { ExchangeRate } from '../../domain/entities/exchange-rate.entity';
 import type { DolarApiResponse } from '../../domain/types/dolar-api-response.type';
+import {
+  getCurrencyConfig,
+  DEFAULT_COUNTRY,
+} from '../../domain/config/country-currency.config';
 import { ExternalServiceException } from '../../../../shared-kernel/domain/exceptions/external-service.exception';
 
-const DEFAULT_DOLAR_API_URL = 'https://ve.dolarapi.com/v1/dolares/oficial';
-const CACHE_KEY = 'exchange_rate:current';
-const CACHE_TTL_MS = 4 * 60 * 60 * 1000; // 4 horas (segun ARCHITECTURE_MASTER.md §5)
 const FETCH_TIMEOUT_MS = 10_000;
 
 @Injectable()
 export class DolarApiExchangeRateProvider implements IExchangeRateProvider {
   private readonly logger = new Logger(DolarApiExchangeRateProvider.name);
-  private readonly dolarApiUrl: string;
 
   /**
-   * Ultima tasa valida en memoria como fallback de ultimo recurso.
+   * Última tasa conocida por currency como fallback de último recurso.
    * Cumple regla irrompible #3: "La app nunca muestra tasa no disponible".
    */
-  private lastKnownRate: ExchangeRate | null = null;
+  private readonly lastKnownRates = new Map<string, ExchangeRate>();
 
-  constructor(
-    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-    private readonly configService: ConfigService,
-  ) {
-    this.dolarApiUrl = this.configService.get<string>(
-      'DOLAR_API_URL',
-      DEFAULT_DOLAR_API_URL,
-    );
-  }
+  async getCurrent(currency: string = DEFAULT_COUNTRY): Promise<ExchangeRate> {
+    const config = getCurrencyConfig(currency);
 
-  async getCurrent(): Promise<ExchangeRate> {
-    // 1. Intentar cache
-    const cached = await this.cacheManager.get<{
-      rateLocalPerUsd: number;
-      source: string;
-      fetchedAt: string;
-    }>(CACHE_KEY);
-
-    if (cached) {
-      const rate = ExchangeRate.reconstitute(randomUUID(), {
-        rateLocalPerUsd: cached.rateLocalPerUsd,
-        source: cached.source,
-        fetchedAt: new Date(cached.fetchedAt),
-      });
-      this.lastKnownRate = rate;
-      return rate;
-    }
-
-    // 2. Fetch desde API externa
     try {
-      const rate = await this.fetchFromApi();
-      this.lastKnownRate = rate;
-
-      await this.cacheManager.set(
-        CACHE_KEY,
-        {
-          rateLocalPerUsd: rate.rateLocalPerUsd,
-          source: rate.source,
-          fetchedAt: rate.fetchedAt.toISOString(),
-        },
-        CACHE_TTL_MS,
+      const rate = await this.fetchFromApi(
+        config.apiUrl,
+        config.rateField,
+        config.currency,
       );
-
+      this.lastKnownRates.set(config.currency, rate);
       return rate;
     } catch (error) {
       this.logger.warn(
-        `Failed to fetch exchange rate from DolarAPI: ${error instanceof Error ? error.message : String(error)}`,
+        `Failed to fetch exchange rate for ${config.currency}: ${error instanceof Error ? error.message : String(error)}`,
       );
 
-      // 3. Fallback: ultima tasa conocida en memoria
-      if (this.lastKnownRate) {
-        this.logger.warn('Using last known exchange rate as fallback');
-        return this.lastKnownRate;
+      const fallback = this.lastKnownRates.get(config.currency);
+      if (fallback) {
+        this.logger.warn(
+          `Using last known rate for ${config.currency} as fallback`,
+        );
+        return fallback;
       }
 
       throw new ExternalServiceException(
         'DolarAPI',
-        'No se pudo obtener la tasa de cambio y no hay tasa en cache',
+        `No se pudo obtener la tasa de cambio para ${config.currency}`,
       );
     }
   }
 
-  private async fetchFromApi(): Promise<ExchangeRate> {
+  private async fetchFromApi(
+    url: string,
+    rateField: 'promedio' | 'venta' | 'compra',
+    currency: string,
+  ): Promise<ExchangeRate> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
     try {
-      const response = await fetch(this.dolarApiUrl, {
+      const response = await fetch(url, {
         signal: controller.signal,
         headers: { Accept: 'application/json' },
       });
@@ -101,12 +71,13 @@ export class DolarApiExchangeRateProvider implements IExchangeRateProvider {
       }
 
       const data = (await response.json()) as DolarApiResponse;
+      const rate = data[rateField] ?? data.promedio;
 
-      if (!data.promedio || data.promedio <= 0) {
-        throw new Error(`Invalid rate value: ${String(data.promedio)}`);
+      if (!rate || rate <= 0) {
+        throw new Error(`Invalid rate value for ${currency}: ${String(rate)}`);
       }
 
-      return ExchangeRate.create(randomUUID(), data.promedio, data.fuente);
+      return ExchangeRate.create(randomUUID(), rate, data.fuente ?? currency);
     } finally {
       clearTimeout(timeout);
     }
