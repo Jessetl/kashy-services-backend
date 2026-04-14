@@ -29,7 +29,9 @@ import { UpdateNotificationPreferencesUseCase } from '../../application/use-case
 import { SeedLoginUseCase } from '../../application/use-cases/seed-login.use-case';
 import { UpdateProfileUseCase } from '../../application/use-cases/update-profile.use-case';
 import { ChangePasswordUseCase } from '../../application/use-cases/change-password.use-case';
+import { GoogleAuthUseCase } from '../../application/use-cases/google-auth.use-case';
 import { RegisterUserDto } from '../../application/dtos/register-user.dto';
+import { GoogleAuthDto } from '../../application/dtos/google-auth.dto';
 import { LoginUserDto } from '../../application/dtos/login-user.dto';
 import { RefreshTokenDto } from '../../application/dtos/refresh-token.dto';
 import { UpdateNotificationPreferencesDto } from '../../application/dtos/update-notification-preferences.dto';
@@ -55,6 +57,7 @@ export class UsersController {
     private readonly seedLogin: SeedLoginUseCase,
     private readonly updateProfile: UpdateProfileUseCase,
     private readonly changePassword: ChangePasswordUseCase,
+    private readonly googleAuth: GoogleAuthUseCase,
   ) {}
 
   @Public()
@@ -97,7 +100,10 @@ export class UsersController {
     description: 'Login seed exitoso',
     type: UserResponseDto,
   })
-  @ApiResponse({ status: 401, description: 'Usuario no encontrado o entorno no es development' })
+  @ApiResponse({
+    status: 401,
+    description: 'Usuario no encontrado o entorno no es development',
+  })
   async seedLoginEndpoint(@Body() dto: SeedLoginDto) {
     return this.seedLogin.execute(dto);
   }
@@ -119,6 +125,24 @@ export class UsersController {
   })
   async refresh(@Body() dto: RefreshTokenDto) {
     return this.refreshUserToken.execute(dto);
+  }
+
+  @Public()
+  @Post('google-auth')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Autenticar con Google via Firebase (Sign-In o registro automático)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Autenticación exitosa',
+    type: LoginResponseDto,
+  })
+  @ApiResponse({ status: 401, description: 'ID token inválido o expirado' })
+  @ApiResponse({ status: 503, description: 'Error al conectar con Firebase' })
+  async googleAuthEndpoint(@Body() dto: GoogleAuthDto) {
+    return this.googleAuth.execute(dto);
   }
 
   @Get('me')
@@ -147,8 +171,15 @@ export class UsersController {
 
   @Put('me')
   @ApiBearerAuth('firebase-token')
-  @ApiOperation({ summary: 'Actualizar perfil del usuario (nombre, apellido, avatar, país, contraseña)' })
-  @ApiResponse({ status: 200, description: 'Perfil actualizado', type: UserResponseDto })
+  @ApiOperation({
+    summary:
+      'Actualizar perfil del usuario (nombre, apellido, avatar, país, contraseña)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Perfil actualizado',
+    type: UserResponseDto,
+  })
   @ApiResponse({ status: 400, description: 'Datos de entrada inválidos' })
   @ApiResponse({ status: 401, description: 'Token inválido o ausente' })
   async updateMe(
@@ -166,7 +197,10 @@ export class UsersController {
   @ApiBearerAuth('firebase-token')
   @ApiOperation({ summary: 'Cambiar contraseña del usuario autenticado' })
   @ApiResponse({ status: 200, description: 'Contraseña actualizada' })
-  @ApiResponse({ status: 401, description: 'Contraseña actual incorrecta o token inválido' })
+  @ApiResponse({
+    status: 401,
+    description: 'Contraseña actual incorrecta o token inválido',
+  })
   @ApiResponse({ status: 503, description: 'Error al conectar con Firebase' })
   async changePasswordEndpoint(
     @CurrentUser() user: FirebaseUser,
@@ -196,7 +230,9 @@ export class UsersController {
 
   @Put('me/notification-preferences')
   @ApiBearerAuth('firebase-token')
-  @ApiOperation({ summary: 'Actualizar preferencias de notificacion (parcial)' })
+  @ApiOperation({
+    summary: 'Actualizar preferencias de notificacion (parcial)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Preferencias actualizadas',

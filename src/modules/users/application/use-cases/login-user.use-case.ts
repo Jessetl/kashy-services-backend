@@ -42,7 +42,6 @@ export class LoginUserUseCase implements UseCase<
 
   async execute(input: LoginUserDto): Promise<LoginResponseDto> {
     const url = `${this.authUrl}/accounts:signInWithPassword?key=${this.apiKey}`;
-
     // Try-catch alrededor de fetch — puede fallar por red, DNS, o timeout
     let response: Response;
     const controller = new AbortController();
@@ -82,8 +81,7 @@ export class LoginUserUseCase implements UseCase<
       const firebaseMessage = body?.error?.message;
 
       if (
-        firebaseMessage === 'EMAIL_NOT_FOUND' ||
-        firebaseMessage === 'INVALID_PASSWORD'
+        ['EMAIL_NOT_FOUND', 'INVALID_PASSWORD'].includes(firebaseMessage || '')
       ) {
         throw new UnauthorizedException('Invalid email or password');
       }

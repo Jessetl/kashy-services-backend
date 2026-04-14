@@ -16,6 +16,7 @@ import { UpdateNotificationPreferencesUseCase } from './application/use-cases/up
 import { SeedLoginUseCase } from './application/use-cases/seed-login.use-case';
 import { UpdateProfileUseCase } from './application/use-cases/update-profile.use-case';
 import { ChangePasswordUseCase } from './application/use-cases/change-password.use-case';
+import { GoogleAuthUseCase } from './application/use-cases/google-auth.use-case';
 import { UsersController } from './infrastructure/controllers/users.controller';
 import { FIREBASE_USER_SYNC_PORT } from '../../shared-kernel/domain/interfaces/firebase-user-sync.port';
 import { DebtsModule } from '../debts/debts.module';
@@ -52,6 +53,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     SeedLoginUseCase,
     UpdateProfileUseCase,
     ChangePasswordUseCase,
+    GoogleAuthUseCase,
   ],
   exports: [
     USER_REPOSITORY,

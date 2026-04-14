@@ -84,14 +84,26 @@ export class RegisterUserUseCase implements UseCase<
       locationLongitude: input.locationLongitude,
     });
 
-    const saved = await this.userRepository.save(user);
+    // Si falla la persistencia local, eliminamos el usuario de Firebase para evitar
+    // que quede un usuario huérfano que no puede iniciar sesión en la app
+    let saved: User;
+    try {
+      saved = await this.userRepository.save(user);
 
-    // Auto-create default notification preferences for the new user
-    const defaultPrefs = NotificationPreferences.createDefaults(
-      randomUUID(),
-      saved.id,
-    );
-    await this.prefsRepository.save(defaultPrefs);
+      const defaultPrefs = NotificationPreferences.createDefaults(
+        randomUUID(),
+        saved.id,
+      );
+      await this.prefsRepository.save(defaultPrefs);
+    } catch (error) {
+      try {
+        await this.firebaseAdmin.auth().deleteUser(firebaseUser.uid);
+      } catch {
+        // El rollback falló — el usuario de Firebase quedó huérfano.
+        // No ocultamos el error original de la BD.
+      }
+      throw error;
+    }
 
     return UserMapper.toResponse(saved);
   }
