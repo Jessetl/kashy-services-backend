@@ -54,13 +54,26 @@ function initFirebase(): void {
 
 // ─── DataSource ───────────────────────────────────────────────────────────────
 
+const databaseUrl = process.env.DATABASE_URL;
+const hasDatabaseUrl = Boolean(databaseUrl);
+const useSsl = process.env.DB_SSL === 'true';
+
 const dataSource = new DataSource({
   type: 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432', 10),
-  username: process.env.DB_USERNAME || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
-  database: process.env.DB_NAME || 'kashy',
+  ...(hasDatabaseUrl
+    ? { url: databaseUrl }
+    : {
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '5432', 10),
+        username: process.env.DB_USERNAME || 'postgres',
+        password: process.env.DB_PASSWORD || 'postgres',
+        database: process.env.DB_NAME || 'kashydb',
+      }),
+  ...(hasDatabaseUrl
+    ? {}
+    : {
+        ssl: useSsl ? { rejectUnauthorized: false } : false,
+      }),
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -134,4 +147,4 @@ async function main(): Promise<void> {
   }
 }
 
-main();
+void main();
