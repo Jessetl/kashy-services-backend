@@ -38,19 +38,23 @@ export class EditShoppingItemUseCase implements UseCase<
       input.listId,
       input.userId,
     );
-    if (!list) throw new ShoppingListNotFoundException(input.listId);
+    if (!list) {
+      throw new ShoppingListNotFoundException(input.listId);
+    }
 
     const item = list.items.find((i) => i.id === input.itemId);
-    if (!item) throw new ShoppingItemNotFoundException(input.itemId);
+    if (!item) {
+      throw new ShoppingItemNotFoundException(input.itemId);
+    }
 
     const exchangeRate = await this.exchangeRateProvider.getCurrent();
 
     const updatedItem = item.update(
-      input.dto.productName,
-      input.dto.category,
-      input.dto.unitPriceLocal,
-      input.dto.quantity ?? 1,
-      input.dto.unitPriceUsd ?? null,
+      input.dto.productName ?? item.productName,
+      input.dto.category ?? item.category,
+      input.dto.unitPriceLocal ?? item.unitPriceLocal,
+      input.dto.quantity ?? item.quantity,
+      input.dto.unitPriceUsd ?? item.unitPriceUsd,
       exchangeRate.rateLocalPerUsd,
       input.dto.isPurchased ?? item.isPurchased,
     );

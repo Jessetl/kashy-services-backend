@@ -40,8 +40,8 @@ export class ShoppingItem extends BaseEntity {
   }
 
   /**
-   * @param unitPriceUsd Si es null y rateVesPerUsd esta disponible, se calcula automaticamente.
-   * @param rateVesPerUsd Tasa VES/USD vigente para conversion automatica.
+   * @param unitPriceUsd Si es null y rateLocalPerUsd esta disponible, se calcula automaticamente.
+   * @param rateLocalPerUsd Tasa local/USD vigente para conversion automatica.
    * @param isPurchased Estado de compra (default false para items nuevos).
    */
   static create(
@@ -52,7 +52,7 @@ export class ShoppingItem extends BaseEntity {
     unitPriceLocal: number,
     quantity: number,
     unitPriceUsd: number | null = null,
-    rateVesPerUsd: number | null = null,
+    rateLocalPerUsd: number | null = null,
     isPurchased: boolean = false,
   ): ShoppingItem {
     const totalLocal = unitPriceLocal * quantity;
@@ -61,10 +61,10 @@ export class ShoppingItem extends BaseEntity {
     let resolvedUnitPriceUsd = unitPriceUsd;
     if (
       resolvedUnitPriceUsd === null &&
-      rateVesPerUsd !== null &&
-      rateVesPerUsd > 0
+      rateLocalPerUsd !== null &&
+      rateLocalPerUsd > 0
     ) {
-      resolvedUnitPriceUsd = unitPriceLocal / rateVesPerUsd;
+      resolvedUnitPriceUsd = unitPriceLocal / rateLocalPerUsd;
     }
 
     const totalUsd =
@@ -105,7 +105,7 @@ export class ShoppingItem extends BaseEntity {
     unitPriceLocal: number,
     quantity: number,
     unitPriceUsd: number | null,
-    rateVesPerUsd: number | null,
+    rateLocalPerUsd: number | null,
     isPurchased: boolean,
   ): ShoppingItem {
     return ShoppingItem.create(
@@ -116,7 +116,7 @@ export class ShoppingItem extends BaseEntity {
       unitPriceLocal,
       quantity,
       unitPriceUsd,
-      rateVesPerUsd,
+      rateLocalPerUsd,
       isPurchased,
     );
   }
