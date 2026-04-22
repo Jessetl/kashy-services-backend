@@ -1,7 +1,15 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import amqplib from 'amqplib';
-import type { INotificationQueueService, NotificationMessage } from '../../domain/interfaces/notification-queue.service.interface';
+import type {
+  INotificationQueueService,
+  NotificationMessage,
+} from '../../domain/interfaces/notification-queue.service.interface';
 import { NOTIFICATION_QUEUE, NOTIFICATION_EXCHANGE } from './rabbitmq.config';
 
 @Injectable()

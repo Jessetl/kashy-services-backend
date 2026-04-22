@@ -41,20 +41,27 @@ export class RabbitMqNotificationConsumer implements OnModuleInit {
     await channel.assertQueue(NOTIFICATION_QUEUE, { durable: true });
     await channel.prefetch(10);
 
-    channel.consume(NOTIFICATION_QUEUE, async (msg) => {
-      if (!msg) return;
+    await channel.consume(NOTIFICATION_QUEUE, (msg) => {
+      if (!msg) {
+        return;
+      }
 
       try {
-        const payload: NotificationMessage = JSON.parse(
+        const payload = JSON.parse(
           msg.content.toString(),
-        );
+        ) as NotificationMessage;
 
-        await this.handleMessage(payload);
-        channel.ack(msg);
+        this.handleMessage(payload)
+          .then(() => channel.ack(msg))
+          .catch((error) => {
+            const errorMsg =
+              error instanceof Error ? error.message : String(error);
+            this.logger.error(`Error processing notification: ${errorMsg}`);
+            channel.nack(msg, false, false);
+          });
       } catch (error) {
-        const errorMsg =
-          error instanceof Error ? error.message : String(error);
-        this.logger.error(`Error processing notification: ${errorMsg}`);
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        this.logger.error(`Invalid message format: ${errorMsg}`);
         channel.nack(msg, false, false);
       }
     });
@@ -75,7 +82,11 @@ export class RabbitMqNotificationConsumer implements OnModuleInit {
     const success = await this.pushService.sendPush(
       message.fcmToken,
       'Recordatorio de deuda',
-      `Tu deuda "${message.debtTitle}" vence manana. ¡No olvides pagarla!`,
+      `Tu deuda "${message.debtTitle}" vence mañana. ¡No olvides pagarla!`,
+      {
+        type: 'debt_due_reminder',
+        debtId: message.debtId,
+      },
     );
 
     if (success) {

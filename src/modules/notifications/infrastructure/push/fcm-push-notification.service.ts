@@ -16,24 +16,38 @@ export class FcmPushNotificationService implements IPushNotificationService {
     fcmToken: string,
     title: string,
     body: string,
+    data?: Record<string, string>,
   ): Promise<boolean> {
     try {
+      // Data-only payload: el cliente (notifee en RN) se encarga del display.
+      // Evita el auto-display de FCM en Android que exige meta-data de icono/canal
+      // en AndroidManifest.xml y dispara crashes cuando no coincide con el cliente.
+      const payload: Record<string, string> = {
+        title,
+        body,
+        ...(data ?? {}),
+      };
+
       await this.firebaseAdmin.messaging().send({
         token: fcmToken,
-        notification: { title, body },
+        data: payload,
         android: {
           priority: 'high',
-          notification: {
-            channelId: 'debt_reminders',
-            priority: 'high',
-          },
+          // Intencionalmente sin bloque "notification": data-only.
         },
         apns: {
+          headers: {
+            'apns-priority': '10',
+            'apns-push-type': 'alert',
+          },
           payload: {
             aps: {
+              // iOS requiere "alert" para entregar la push en background/killed.
+              // Sin esto, un data-only solo llega cuando la app está en foreground.
               alert: { title, body },
               sound: 'default',
               badge: 1,
+              'content-available': 1,
             },
           },
         },

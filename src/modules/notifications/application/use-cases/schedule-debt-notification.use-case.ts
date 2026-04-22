@@ -16,9 +16,10 @@ interface ScheduleDebtNotificationInput {
 }
 
 @Injectable()
-export class ScheduleDebtNotificationUseCase
-  implements UseCase<ScheduleDebtNotificationInput, NotificationResponseDto | null>
-{
+export class ScheduleDebtNotificationUseCase implements UseCase<
+  ScheduleDebtNotificationInput,
+  NotificationResponseDto | null
+> {
   constructor(
     @Inject(NOTIFICATION_REPOSITORY)
     private readonly notificationRepository: INotificationRepository,
