@@ -11,17 +11,25 @@ import {
 } from 'class-validator';
 
 export class GoogleAuthDto {
-  @ApiProperty({ description: 'Firebase ID token obtained after Google Sign-In on the client' })
+  @ApiProperty({
+    description:
+      'Firebase ID token obtained after Google Sign-In on the client',
+  })
   @IsString()
   @IsNotEmpty()
   idToken!: string;
 
-  @ApiPropertyOptional({ description: 'Google OAuth access token (for future use)' })
+  @ApiPropertyOptional({
+    description: 'Google OAuth access token (for future use)',
+  })
   @IsString()
   @IsOptional()
   accessToken?: string;
 
-  @ApiPropertyOptional({ example: 'VE', description: 'ISO 3166-1 alpha-2 country code' })
+  @ApiPropertyOptional({
+    example: 'VE',
+    description: 'ISO 3166-1 alpha-2 country code',
+  })
   @IsString()
   @IsOptional()
   @MaxLength(2)

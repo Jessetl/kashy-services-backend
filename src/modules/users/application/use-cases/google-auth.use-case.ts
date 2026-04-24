@@ -54,7 +54,7 @@ export class GoogleAuthUseCase implements UseCase<
       throw new UnauthorizedException('Invalid or expired Google ID token');
     }
 
-    const { uid, email, picture } = decodedToken;
+    const { uid, name, email, picture } = decodedToken;
 
     if (!email) {
       throw new UnauthorizedException(
@@ -66,7 +66,7 @@ export class GoogleAuthUseCase implements UseCase<
     const user = await this.findOrCreateUser({
       uid,
       email,
-      displayName: 'Anonymous',
+      displayName: (name as string) ?? 'Anonymous',
       photoURL: picture,
       country: input.country,
       locationLatitude: input.locationLatitude,
