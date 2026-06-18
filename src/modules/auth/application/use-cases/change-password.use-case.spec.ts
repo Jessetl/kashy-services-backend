@@ -1,6 +1,3 @@
-process.env.APP_ENCRYPTION_KEY ??=
-  'a2tra2tra2tra2tra2tra2tra2tra2tra2tra2tra2s=';
-
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { UnauthorizedException } from '@nestjs/common';
 import type { IUserRepository } from '../../domain/interfaces/repositories/user.repository.interface';
@@ -16,12 +13,6 @@ describe('ChangePasswordUseCase', () => {
   let firebaseAuth: jest.Mocked<IFirebaseAuthService>;
   let useCase: ChangePasswordUseCase;
 
-  const device = {
-    deviceId: 'dev-1',
-    deviceName: 'Pixel',
-    fcmToken: null,
-  };
-
   const user = User.create('u-1', 'fb-uid', 'jane@kashy.app', 'VE');
 
   beforeEach(() => {
@@ -30,9 +21,7 @@ describe('ChangePasswordUseCase', () => {
       save: jest.fn(),
     } as never;
     deviceRepository = {
-      findByDeviceId: jest.fn(),
-      save: jest.fn(),
-      deleteByUserIdExceptDevice: jest.fn(),
+      deleteByUserId: jest.fn(),
     } as never;
     firebaseAuth = {
       signIn: jest.fn(),
@@ -54,8 +43,6 @@ describe('ChangePasswordUseCase', () => {
       expiresIn: 3600,
       email: user.email,
     });
-    deviceRepository.findByDeviceId.mockResolvedValue(null);
-    deviceRepository.save.mockImplementation(async (d) => d);
   });
 
   it('lanza UserNotFoundException si user no existe', async () => {
@@ -65,7 +52,6 @@ describe('ChangePasswordUseCase', () => {
       useCase.execute({
         userId: 'u-1',
         dto: { currentPassword: 'a', newPassword: 'b' } as never,
-        device,
       }),
     ).rejects.toBeInstanceOf(UserNotFoundException);
   });
@@ -79,34 +65,33 @@ describe('ChangePasswordUseCase', () => {
       useCase.execute({
         userId: 'u-1',
         dto: { currentPassword: 'wrong', newPassword: 'b' } as never,
-        device,
       }),
     ).rejects.toBeInstanceOf(UnauthorizedException);
 
     expect(firebaseAuth.updatePassword).not.toHaveBeenCalled();
+    expect(firebaseAuth.revokeRefreshTokens).not.toHaveBeenCalled();
+    expect(deviceRepository.deleteByUserId).not.toHaveBeenCalled();
   });
 
-  it('ejecuta secuencia: verify → update → revoke → delete devices → re-signin → upsert', async () => {
+  it('ejecuta secuencia: verify → update → revoke → wipe devices', async () => {
     await useCase.execute({
       userId: 'u-1',
       dto: { currentPassword: 'old', newPassword: 'new' } as never,
-      device,
     });
 
-    expect(firebaseAuth.signIn).toHaveBeenNthCalledWith(1, {
+    expect(firebaseAuth.signIn).toHaveBeenCalledWith({
       email: user.email,
       password: 'old',
     });
     expect(firebaseAuth.updatePassword).toHaveBeenCalledWith('fb-uid', 'new');
     expect(firebaseAuth.revokeRefreshTokens).toHaveBeenCalledWith('fb-uid');
-    expect(deviceRepository.deleteByUserIdExceptDevice).toHaveBeenCalledWith(
-      'u-1',
-      'dev-1',
-    );
-    expect(firebaseAuth.signIn).toHaveBeenNthCalledWith(2, {
-      email: user.email,
-      password: 'new',
-    });
-    expect(deviceRepository.save).toHaveBeenCalled();
+    expect(deviceRepository.deleteByUserId).toHaveBeenCalledWith('u-1');
+    expect(firebaseAuth.signIn).toHaveBeenCalledTimes(1);
+
+    const revokeOrder =
+      firebaseAuth.revokeRefreshTokens.mock.invocationCallOrder[0];
+    const deleteOrder =
+      deviceRepository.deleteByUserId.mock.invocationCallOrder[0];
+    expect(revokeOrder).toBeLessThan(deleteOrder);
   });
 });

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -338,9 +339,7 @@ export class FirebaseAuthService implements IFirebaseAuthService {
 
   private mapFirebaseError(code: string): Error {
     if (code.startsWith('EMAIL_EXISTS')) {
-      return new BadRequestException(
-        'El correo electronico ya esta registrado',
-      );
+      return new ConflictException('El correo electronico ya esta registrado');
     }
     if (
       code.startsWith('INVALID_PASSWORD') ||

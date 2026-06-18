@@ -2,12 +2,10 @@ import {
   Body,
   Controller,
   Get,
-  Headers,
   HttpCode,
   HttpStatus,
   Patch,
   Post,
-  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -34,6 +32,7 @@ import { LoginGoogleDto } from '../../application/dtos/login-google.dto';
 import { ChangePasswordDto } from '../../application/dtos/change-password.dto';
 import { UpdateProfileDto } from '../../application/dtos/update-profile.dto';
 import { RecoverPasswordDto } from '../../application/dtos/recover-password.dto';
+import { RefreshTokenDto } from '../../application/dtos/refresh-token.dto';
 import { AuthResponseDto } from '../../application/dtos/auth-response.dto';
 import { RefreshResponseDto } from '../../application/dtos/refresh-response.dto';
 import { RegisterResponseDto } from '../../application/dtos/register-response.dto';
@@ -43,7 +42,6 @@ import {
   ApiValidationErrorResponse,
 } from '../../../../shared-kernel/application/responses/api-response.dto';
 import {
-  DeviceIdHeader,
   DeviceInfo,
   DeviceInfoHeaders,
 } from '../decorators/device-info.decorator';
@@ -98,10 +96,20 @@ export class AuthController {
   @ApiOperation({
     summary: 'Login con email + password',
     description:
-      'Autentica contra Firebase, upserta refresh token encriptado en user_devices y devuelve JWT custom (15 min) + perfil.',
+      'Autentica contra Firebase, upserta el dispositivo en user_devices (sin almacenar refresh) y devuelve JWT custom (15 min) + refreshToken de Firebase + perfil. El cliente debe guardar el refreshToken en Keychain (iOS) o Keystore (Android).',
   })
   @ApiHeader({ name: 'X-Device-Id', required: true })
   @ApiHeader({ name: 'X-Device-Name', required: true })
+  @ApiHeader({
+    name: 'X-Platform',
+    required: true,
+    description: 'Plataforma del cliente. Valores permitidos: ios | android',
+  })
+  @ApiHeader({
+    name: 'X-App-Version',
+    required: false,
+    description: 'Version semver de la app (ej. 1.2.3)',
+  })
   @ApiHeader({ name: 'X-Fcm-Token', required: false })
   @ApiResponse({
     status: 200,
@@ -127,10 +135,20 @@ export class AuthController {
   @ApiOperation({
     summary: 'Login con idToken de Google via Firebase',
     description:
-      'Verifica el idToken de Google contra Firebase (signInWithIdp), crea el usuario si no existe (auto-registro), guarda refresh token encriptado en user_devices y devuelve JWT custom + perfil.',
+      'Verifica el idToken de Google contra Firebase (signInWithIdp), crea el usuario si no existe (auto-registro), upserta el dispositivo en user_devices (sin almacenar refresh) y devuelve JWT custom + refreshToken de Firebase + perfil. El cliente debe guardar el refreshToken en Keychain (iOS) o Keystore (Android).',
   })
   @ApiHeader({ name: 'X-Device-Id', required: true })
   @ApiHeader({ name: 'X-Device-Name', required: true })
+  @ApiHeader({
+    name: 'X-Platform',
+    required: true,
+    description: 'Plataforma del cliente. Valores permitidos: ios | android',
+  })
+  @ApiHeader({
+    name: 'X-App-Version',
+    required: false,
+    description: 'Version semver de la app (ej. 1.2.3)',
+  })
   @ApiHeader({ name: 'X-Fcm-Token', required: false })
   @ApiResponse({
     status: 200,
@@ -158,14 +176,23 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth('jwt')
   @ApiOperation({
     summary: 'Renovar JWT custom',
     description:
-      'Requiere el JWT custom expirado en Authorization Bearer como proof-of-possession + X-Device-Id. Backend valida firma del JWT (ignorando expiracion), verifica que el device pertenece al user, intercambia el refresh token de Firebase y firma un nuevo JWT.',
+      'Endpoint publico (sin Bearer). El cliente envia el refreshToken de Firebase en el body + headers de dispositivo. El backend intercambia el refresh contra Firebase, valida device binding (user del idToken == device.userId) y firma un nuevo JWT custom. Devuelve nuevo accessToken + refreshToken (puede rotar) + expiresIn.',
   })
   @ApiHeader({ name: 'X-Device-Id', required: true })
-  @ApiHeader({ name: 'X-Device-Name', required: false })
+  @ApiHeader({ name: 'X-Device-Name', required: true })
+  @ApiHeader({
+    name: 'X-Platform',
+    required: true,
+    description: 'Plataforma del cliente. Valores permitidos: ios | android',
+  })
+  @ApiHeader({
+    name: 'X-App-Version',
+    required: false,
+    description: 'Version semver de la app (ej. 1.2.3)',
+  })
   @ApiResponse({
     status: 200,
     description: 'JWT renovado',
@@ -173,23 +200,17 @@ export class AuthController {
   })
   @ApiResponse({
     status: 401,
-    description:
-      'Refresh token invalido, revocado, sin Authorization Bearer o device no autorizado',
+    description: 'Refresh token invalido, revocado o device no autorizado',
     type: ApiErrorResponse,
   })
   refresh(
-    @DeviceIdHeader() deviceId: string,
-    @Headers('authorization') authorization: string | undefined,
-    @Headers('x-device-name') _deviceName?: string,
+    @Body() dto: RefreshTokenDto,
+    @DeviceInfoHeaders() device: DeviceInfo,
   ): Promise<RefreshResponseDto> {
-    void _deviceName;
-    const accessTokenHint = extractBearerToken(authorization);
-    if (!accessTokenHint) {
-      throw new UnauthorizedException(
-        'Falta el JWT en Authorization Bearer para refresh',
-      );
-    }
-    return this.refreshToken.execute({ deviceId, accessTokenHint });
+    return this.refreshToken.execute({
+      refreshToken: dto.refreshToken,
+      deviceId: device.deviceId,
+    });
   }
 
   @Public()
@@ -223,11 +244,24 @@ export class AuthController {
   @ApiOperation({
     summary: 'Cambio de contraseña del usuario autenticado',
     description:
-      'Verifica la contraseña actual contra Firebase, actualiza la nueva, revoca todos los refresh tokens del usuario y elimina los user_devices distintos al actual. Genera un nuevo refresh token para el dispositivo actual.',
+      'Verifica la contraseña actual contra Firebase, actualiza la nueva y revoca todos los refresh tokens del usuario via Firebase. El cliente debe descartar el refreshToken local y forzar re-login en todos los dispositivos.',
   })
   @ApiHeader({ name: 'X-Device-Id', required: true })
   @ApiHeader({ name: 'X-Device-Name', required: true })
-  @ApiResponse({ status: 204, description: 'Contraseña actualizada' })
+  @ApiHeader({
+    name: 'X-Platform',
+    required: true,
+    description: 'Plataforma del cliente. Valores permitidos: ios | android',
+  })
+  @ApiHeader({
+    name: 'X-App-Version',
+    required: false,
+    description: 'Version semver de la app (ej. 1.2.3)',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Contraseña actualizada. Cliente debe re-loguear.',
+  })
   @ApiResponse({
     status: 400,
     description: 'Datos invalidos',
@@ -246,9 +280,10 @@ export class AuthController {
   async changePassword(
     @CurrentUserId() userId: string,
     @Body() dto: ChangePasswordDto,
-    @DeviceInfoHeaders() device: DeviceInfo,
+    @DeviceInfoHeaders() _device: DeviceInfo,
   ): Promise<void> {
-    await this.changePasswordUseCase.execute({ userId, dto, device });
+    void _device;
+    await this.changePasswordUseCase.execute({ userId, dto });
   }
 
   @Get('profile')
@@ -261,6 +296,16 @@ export class AuthController {
   })
   @ApiHeader({ name: 'X-Device-Id', required: true })
   @ApiHeader({ name: 'X-Device-Name', required: true })
+  @ApiHeader({
+    name: 'X-Platform',
+    required: true,
+    description: 'Plataforma del cliente. Valores permitidos: ios | android',
+  })
+  @ApiHeader({
+    name: 'X-App-Version',
+    required: false,
+    description: 'Version semver de la app (ej. 1.2.3)',
+  })
   @ApiResponse({ status: 200, description: 'Perfil', type: UserResponseDto })
   @ApiResponse({
     status: 401,
@@ -290,6 +335,16 @@ export class AuthController {
   })
   @ApiHeader({ name: 'X-Device-Id', required: true })
   @ApiHeader({ name: 'X-Device-Name', required: true })
+  @ApiHeader({
+    name: 'X-Platform',
+    required: true,
+    description: 'Plataforma del cliente. Valores permitidos: ios | android',
+  })
+  @ApiHeader({
+    name: 'X-App-Version',
+    required: false,
+    description: 'Version semver de la app (ej. 1.2.3)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Perfil actualizado',
@@ -325,10 +380,20 @@ export class AuthController {
   @ApiOperation({
     summary: 'Cerrar sesion del dispositivo actual',
     description:
-      'Elimina la fila de user_devices asociada al user_id + X-Device-Id (refresh token + FCM token). Otros dispositivos del usuario permanecen activos.',
+      'Elimina la fila de user_devices asociada al user_id + X-Device-Id. El cliente debe descartar el accessToken y refreshToken local. Otros dispositivos del usuario permanecen activos.',
   })
   @ApiHeader({ name: 'X-Device-Id', required: true })
   @ApiHeader({ name: 'X-Device-Name', required: true })
+  @ApiHeader({
+    name: 'X-Platform',
+    required: true,
+    description: 'Plataforma del cliente. Valores permitidos: ios | android',
+  })
+  @ApiHeader({
+    name: 'X-App-Version',
+    required: false,
+    description: 'Version semver de la app (ej. 1.2.3)',
+  })
   @ApiResponse({ status: 204, description: 'Sesion cerrada' })
   @ApiResponse({
     status: 401,
@@ -346,10 +411,4 @@ export class AuthController {
   ): Promise<void> {
     await this.logoutUseCase.execute({ userId, deviceId: device.deviceId });
   }
-}
-
-function extractBearerToken(authorization?: string): string | undefined {
-  if (!authorization) return undefined;
-  const match = /^Bearer\s+(.+)$/i.exec(authorization);
-  return match?.[1]?.trim() || undefined;
 }

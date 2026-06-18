@@ -8,8 +8,12 @@ import type { Request } from 'express';
 export interface DeviceInfo {
   deviceId: string;
   deviceName: string;
+  platform: string;
+  appVersion: string | null;
   fcmToken: string | null;
 }
+
+const ALLOWED_PLATFORMS = new Set(['ios', 'android']);
 
 function getHeader(req: Request, name: string): string | undefined {
   const value = (req.headers as Record<string, unknown>)[name.toLowerCase()];
@@ -27,6 +31,7 @@ export const DeviceInfoHeaders = createParamDecorator<undefined, DeviceInfo>(
 
     const deviceId = getHeader(req, 'X-Device-Id');
     const deviceName = getHeader(req, 'X-Device-Name');
+    const platformRaw = getHeader(req, 'X-Platform');
 
     if (!deviceId) {
       throw new BadRequestException('Falta el encabezado X-Device-Id');
@@ -34,10 +39,22 @@ export const DeviceInfoHeaders = createParamDecorator<undefined, DeviceInfo>(
     if (!deviceName) {
       throw new BadRequestException('Falta el encabezado X-Device-Name');
     }
+    if (!platformRaw) {
+      throw new BadRequestException('Falta el encabezado X-Platform');
+    }
+
+    const platform = platformRaw.toLowerCase();
+    if (!ALLOWED_PLATFORMS.has(platform)) {
+      throw new BadRequestException(
+        'X-Platform debe ser "ios" o "android"',
+      );
+    }
 
     return {
       deviceId,
       deviceName,
+      platform,
+      appVersion: getHeader(req, 'X-App-Version') ?? null,
       fcmToken: getHeader(req, 'X-Fcm-Token') ?? null,
     };
   },

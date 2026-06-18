@@ -23,6 +23,8 @@ describe('LoginWithGoogleUseCase', () => {
   const device = {
     deviceId: 'dev-1',
     deviceName: 'Pixel',
+    platform: 'android',
+    appVersion: '1.0.0',
     fcmToken: null,
   };
 

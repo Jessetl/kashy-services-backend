@@ -70,6 +70,7 @@ export class RegisterUserUseCase implements UseCase<
       this.logger.error(
         `DB persistence failed after Firebase signup. Rolling back Firebase user. Reason: ${message}`,
       );
+
       try {
         await this.firebaseAuth.deleteUser(firebaseResult.firebaseUid);
       } catch (rollbackErr) {
@@ -79,6 +80,7 @@ export class RegisterUserUseCase implements UseCase<
             : String(rollbackErr);
         this.logger.error(`Firebase rollback failed: ${rollbackMsg}`);
       }
+
       throw error;
     }
 

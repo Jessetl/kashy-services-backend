@@ -1,10 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { UnauthorizedException } from '../../../../shared-kernel/domain/exceptions/unauthorized.exception';
 import { UseCase } from '../../../../shared-kernel/application/use-case';
-import {
-  decryptString,
-  encryptString,
-} from '../../../../shared-kernel/utils/crypto.util';
 import type { IUserRepository } from '../../domain/interfaces/repositories/user.repository.interface';
 import { USER_REPOSITORY } from '../../domain/interfaces/repositories/user.repository.interface';
 import type { IUserDeviceRepository } from '../../domain/interfaces/repositories/user-device.repository.interface';
@@ -15,8 +11,8 @@ import { RefreshResponseDto } from '../dtos/refresh-response.dto';
 import { JwtTokenService } from '../services/jwt-token.service';
 
 interface RefreshTokenInput {
+  refreshToken: string;
   deviceId: string;
-  accessTokenHint: string;
 }
 
 @Injectable()
@@ -37,55 +33,44 @@ export class RefreshTokenUseCase implements UseCase<
   ) {}
 
   async execute(input: RefreshTokenInput): Promise<RefreshResponseDto> {
-    let payload: { sub: string; email: string; role: string };
+    const { refreshToken, deviceId } = input;
 
+    let firebaseResult;
     try {
-      payload = await this.jwtTokenService.verifyIgnoreExpiration(
-        input.accessTokenHint,
-      );
-    } catch {
-      throw new UnauthorizedException('Token de sesion invalido');
+      firebaseResult = await this.firebaseAuth.refreshIdToken(refreshToken);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Firebase refreshIdToken failed: ${message}`);
+      throw new UnauthorizedException('Refresh token invalido o revocado');
     }
 
-    const device = await this.deviceRepository.findByDeviceId(input.deviceId);
+    const user = await this.userRepository.findByFirebaseUid(
+      firebaseResult.firebaseUid,
+    );
+    if (!user) {
+      throw new UnauthorizedException('El usuario ya no existe');
+    }
+
+    const device = await this.deviceRepository.findByDeviceId(deviceId);
     if (!device) {
       throw new UnauthorizedException('Sesion de dispositivo no encontrada');
     }
 
-    if (device.userId !== payload.sub) {
+    if (device.userId !== user.id) {
       this.logger.warn(
-        `Refresh proof-of-possession mismatch: device.userId=${device.userId} vs jwt.sub=${payload.sub}`,
+        `Refresh device binding mismatch: device.userId=${device.userId} vs user.id=${user.id}`,
       );
       throw new UnauthorizedException('Sesion de dispositivo no autorizada');
     }
 
-    let firebaseRefreshToken: string;
-    try {
-      firebaseRefreshToken = decryptString(device.refreshTokenEncrypted);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Refresh token decryption failed: ${message}`);
-      throw new UnauthorizedException('Sesion de dispositivo invalida');
-    }
-
-    const result = await this.firebaseAuth.refreshIdToken(firebaseRefreshToken);
-
-    if (result.refreshToken && result.refreshToken !== firebaseRefreshToken) {
-      const rotated = device.rotateRefreshToken(
-        encryptString(result.refreshToken),
-      );
-      await this.deviceRepository.save(rotated);
-    }
-
-    const user = await this.userRepository.findById(device.userId);
-    if (!user) {
-      throw new UnauthorizedException('El usuario ya no existe');
-    }
+    const touched = device.touch();
+    await this.deviceRepository.save(touched);
 
     const signed = await this.jwtTokenService.signFor(user);
 
     return {
       accessToken: signed.accessToken,
+      refreshToken: firebaseResult.refreshToken,
       expiresIn: signed.expiresIn,
     };
   }
