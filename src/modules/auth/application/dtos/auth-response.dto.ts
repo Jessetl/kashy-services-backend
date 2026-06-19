@@ -8,6 +8,13 @@ export class AuthResponseDto {
   })
   accessToken!: string;
 
+  @ApiProperty({
+    example: 'AOEOulY...',
+    description:
+      'Refresh token de Firebase. Cliente debe guardarlo en Keychain (iOS) o Keystore (Android). Nunca en AsyncStorage ni almacenamiento sin cifrar.',
+  })
+  refreshToken!: string;
+
   @ApiProperty({ example: 900, description: 'TTL del JWT en segundos' })
   expiresIn!: number;
 

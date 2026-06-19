@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { UnauthorizedException } from '@nestjs/common';
 import { RegisterUserUseCase } from '../../application/use-cases/register-user.use-case';
 import { LoginUserUseCase } from '../../application/use-cases/login-user.use-case';
 import { LoginWithGoogleUseCase } from '../../application/use-cases/login-with-google.use-case';
@@ -33,6 +32,15 @@ describe('AuthController', () => {
   const device = {
     deviceId: 'dev-1',
     deviceName: 'Pixel',
+    platform: 'android',
+    appVersion: '1.0.0',
+    fcmToken: null,
+  };
+  const deviceProfile = {
+    deviceId: 'dev-1',
+    deviceName: 'iPhone 15',
+    platform: 'ios',
+    appVersion: '1.0.0',
     fcmToken: null,
   };
 
@@ -91,29 +99,19 @@ describe('AuthController', () => {
     expect(loginWithGoogle.execute).toHaveBeenCalledWith({ dto, device });
   });
 
-  it('refresh delega deviceId + accessTokenHint extraido del header', async () => {
-    refreshToken.execute.mockResolvedValue({ accessToken: 't' });
+  it('refresh delega refreshToken del body + deviceId del header', async () => {
+    refreshToken.execute.mockResolvedValue({
+      accessToken: 't',
+      refreshToken: 'rt-new',
+      expiresIn: 900,
+    });
 
-    await controller.refresh('dev-1', 'Bearer jwt-expirado');
+    await controller.refresh({ refreshToken: 'rt-old' } as never, device);
 
     expect(refreshToken.execute).toHaveBeenCalledWith({
+      refreshToken: 'rt-old',
       deviceId: 'dev-1',
-      accessTokenHint: 'jwt-expirado',
     });
-  });
-
-  it('refresh lanza unauthorized si no hay Authorization Bearer', async () => {
-    expect(() => controller.refresh('dev-1', undefined)).toThrow(
-      UnauthorizedException,
-    );
-
-    expect(refreshToken.execute).not.toHaveBeenCalled();
-  });
-
-  it('refresh lanza unauthorized si Authorization tiene formato invalido', async () => {
-    expect(() => controller.refresh('dev-1', 'NotBearer xyz')).toThrow(
-      UnauthorizedException,
-    );
   });
 
   it('recoverPassword delega dto', async () => {
@@ -125,27 +123,19 @@ describe('AuthController', () => {
     expect(recoverPassword.execute).toHaveBeenCalledWith(dto);
   });
 
-  it('changePassword delega userId + dto + device', async () => {
+  it('changePassword delega userId + dto y valida headers de device', async () => {
     changePassword.execute.mockResolvedValue(undefined);
     const dto = { currentPassword: 'a', newPassword: 'b' };
 
     await controller.changePassword(userId, dto as never, device);
 
-    expect(changePassword.execute).toHaveBeenCalledWith({
-      userId,
-      dto,
-      device,
-    });
+    expect(changePassword.execute).toHaveBeenCalledWith({ userId, dto });
   });
 
   it('profile devuelve user via getUserById', async () => {
     getUserById.execute.mockResolvedValue({ id: userId, email: 'a@b.com' });
 
-    const result = await controller.profile(userId, {
-      deviceId: 'dev-1',
-      deviceName: 'iPhone 15',
-      fcmToken: null,
-    });
+    const result = await controller.profile(userId, deviceProfile);
 
     expect(getUserById.execute).toHaveBeenCalledWith(userId);
     expect(result).toEqual({ id: userId, email: 'a@b.com' });
@@ -155,11 +145,7 @@ describe('AuthController', () => {
     updateProfile.execute.mockResolvedValue({ id: userId });
     const dto = { firstName: 'Jane' };
 
-    await controller.updateProfile(userId, dto as never, {
-      deviceId: 'dev-1',
-      deviceName: 'iPhone 15',
-      fcmToken: null,
-    });
+    await controller.updateProfile(userId, dto as never, deviceProfile);
 
     expect(updateProfile.execute).toHaveBeenCalledWith({ userId, dto });
   });
@@ -167,11 +153,7 @@ describe('AuthController', () => {
   it('logout delega userId + deviceId', async () => {
     logout.execute.mockResolvedValue(undefined);
 
-    await controller.logout(userId, {
-      deviceId: 'dev-1',
-      deviceName: 'iPhone 15',
-      fcmToken: null,
-    });
+    await controller.logout(userId, deviceProfile);
 
     expect(logout.execute).toHaveBeenCalledWith({ userId, deviceId: 'dev-1' });
   });

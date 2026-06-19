@@ -2,7 +2,6 @@ import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { randomUUID } from 'crypto';
 import { UseCase } from '../../../../shared-kernel/application/use-case';
-import { encryptString } from '../../../../shared-kernel/utils/crypto.util';
 import { withMinDuration } from '../../../../shared-kernel/utils/constant-time.util';
 import type { IUserRepository } from '../../domain/interfaces/repositories/user.repository.interface';
 import { USER_REPOSITORY } from '../../domain/interfaces/repositories/user.repository.interface';
@@ -64,12 +63,13 @@ export class LoginWithGoogleUseCase implements UseCase<
 
     const user = await this.findOrCreateUser(firebaseResult);
 
-    await this.upsertDevice(user.id, device, firebaseResult.refreshToken);
+    await this.upsertDevice(user.id, device);
 
     const signed = await this.jwtTokenService.signFor(user);
 
     return {
       accessToken: signed.accessToken,
+      refreshToken: firebaseResult.refreshToken,
       expiresIn: signed.expiresIn,
       user: UserMapper.toResponse(user),
     };
@@ -108,9 +108,7 @@ export class LoginWithGoogleUseCase implements UseCase<
   private async upsertDevice(
     userId: string,
     device: DeviceInfo,
-    rawRefreshToken: string,
   ): Promise<void> {
-    const encrypted = encryptString(rawRefreshToken);
     const existing = await this.deviceRepository.findByDeviceId(
       device.deviceId,
     );
@@ -119,7 +117,8 @@ export class LoginWithGoogleUseCase implements UseCase<
       const reassigned = existing.reassignToUser(
         userId,
         device.deviceName,
-        encrypted,
+        device.platform,
+        device.appVersion,
         device.fcmToken,
       );
       await this.deviceRepository.save(reassigned);
@@ -135,7 +134,8 @@ export class LoginWithGoogleUseCase implements UseCase<
       userId,
       device.deviceId,
       device.deviceName,
-      encrypted,
+      device.platform,
+      device.appVersion,
       device.fcmToken,
     );
     await this.deviceRepository.save(newDevice);

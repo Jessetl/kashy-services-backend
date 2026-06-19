@@ -3,6 +3,8 @@
 > Endpoints de autenticación, contraseña, perfil y sesión.
 > El frontend nunca interactúa con Firebase directamente — todo pasa por el backend.
 
+> 🔄 **Flujo end-to-end (diagramas de secuencia):** ver [`flows/authentication.md`](../flows/authentication.md) — login, refresh automático, manejo global de `401`, change-password y logout.
+
 > **Convención de nombrado:** Request y response usan **camelCase** en los keys JSON (`accessToken`, `firstName`, `avatarUrl`, `countryCode`, etc.). Los valores enum permanecen en `UPPER_SNAKE_CASE` (`FREE`).
 
 ---
@@ -34,14 +36,14 @@
 |  🟡   | `POST`  | `/auth/register`         |  ❌  | Registro con email y contraseña. No abre sesión — requiere verificación de email. |
 |  🟡   | `POST`  | `/auth/login`            |  ❌  | Login con email y contraseña.                                                     |
 |  🟡   | `POST`  | `/auth/login/google`     |  ❌  | Login con Google.                                                                 |
-|  🟡   | `POST`  | `/auth/refresh`          |  ❌  | Renovar JWT expirado. Envía `refreshToken` en body + `X-Device-Id`.               |
+|  🟡   | `POST`  | `/auth/refresh`          |  ❌  | Renovar JWT expirado. Envía `refreshToken` en body + headers de dispositivo.      |
 |  🟡   | `POST`  | `/auth/recover-password` |  ❌  | Enviar email de recuperación.                                                     |
 |  🟡   | `POST`  | `/auth/change-password`  |  ✅  | Cambiar contraseña.                                                               |
 |  🟢   | `GET`   | `/auth/profile`          |  ✅  | Obtener perfil.                                                                   |
 |  🟠   | `PATCH` | `/auth/profile`          |  ✅  | Actualizar perfil.                                                                |
 |  🟡   | `POST`  | `/auth/logout`           |  ✅  | Cerrar sesión.                                                                    |
 
-> **Nota:** Todas las rutas llevan el prefijo `/api/v1` (ya incluido en `API_BASE_URL`). Los headers `X-Device-Id` y `X-Device-Name` son obligatorios en todos los endpoints de auth (excepto `register` y `recover-password`). Los endpoints con Auth ✅ requieren además `Authorization: Bearer {jwt}`.
+> **Nota:** Todas las rutas llevan el prefijo `/api/v1` (ya incluido en `API_BASE_URL`). Los headers `X-Device-Id`, `X-Device-Name` y `X-Platform` (valores permitidos: `ios` | `android`) son obligatorios en todos los endpoints de auth (excepto `register` y `recover-password`). `X-App-Version` es opcional. Los endpoints con Auth ✅ requieren además `Authorization: Bearer {jwt}`.
 
 ---
 
@@ -52,6 +54,8 @@
 > No abre sesión. El usuario debe verificar su email y luego iniciar sesión vía `POST /auth/login`.
 
 **Headers:** Ninguno requerido (no abre sesión, no requiere `X-Device-Id` / `X-Device-Name`).
+
+**Rate limit:** 3 peticiones por minuto (por IP). Al exceder devuelve `429 Too Many Requests`.
 
 **Enviar:**
 
@@ -87,17 +91,19 @@
 
 **Errores:**
 
-| Código | Qué hacer                                                                |
-| :----- | :----------------------------------------------------------------------- |
-| `400`  | Body malformado. Bug del frontend — revisar payload.                     |
-| `409`  | Email ya registrado. Mostrar error en el campo email.                    |
-| `422`  | Validación fallida. Mapear `fields[]` a errores por campo en formulario. |
+| Código | Qué hacer                                                                                                                                                |
+| :----- | :------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  | Body malformado. Bug del frontend — revisar payload.                                                                                                     |
+| `409`  | Email ya registrado. Mostrar error en el campo email.                                                                                                    |
+| `422`  | Validación fallida (incluye contraseña rechazada por Firebase: débil/comprometida → `fields[].field = "password"`). Mapear `fields[]` a errores por campo en formulario. |
+| `429`  | Rate limit excedido (>3/min). Mostrar "Demasiados intentos, espera un momento" y deshabilitar el botón ~60s.                                             |
+| `500`  | Fallo interno al crear la cuenta (Firebase o DB). El backend revierte el registro parcial automáticamente. Mostrar error genérico y permitir reintentar. |
 
 ---
 
 ### 🟡 `POST /auth/login`
 
-**Headers:** `X-Device-Id`, `X-Device-Name`
+**Headers:** `X-Device-Id`, `X-Device-Name`, `X-Platform` (`ios` | `android`), `X-App-Version` (opcional)
 
 **Enviar:**
 
@@ -147,7 +153,7 @@
 
 ### 🟡 `POST /auth/login/google`
 
-**Headers:** `X-Device-Id`, `X-Device-Name`
+**Headers:** `X-Device-Id`, `X-Device-Name`, `X-Platform` (`ios` | `android`), `X-App-Version` (opcional)
 
 **Enviar:**
 
@@ -202,7 +208,9 @@
 **Headers:**
 
 - `X-Device-Id` — **Obligatorio**. Debe corresponder al dispositivo registrado en `user_devices`.
-- `X-Device-Name` — Opcional en esta ruta.
+- `X-Device-Name` — **Obligatorio**.
+- `X-Platform` — **Obligatorio**. Valores permitidos: `ios` | `android`.
+- `X-App-Version` — Opcional. Version semver de la app (ej. `1.2.3`).
 
 **Enviar:**
 
@@ -274,7 +282,7 @@
 
 > Cambia la contraseña del usuario autenticado. El backend revoca **todos** los refresh tokens del usuario en Firebase (user-wide), cerrando sesiones en otros dispositivos.
 
-**Headers:** `Authorization`, `X-Device-Id`, `X-Device-Name`
+**Headers:** `Authorization`, `X-Device-Id`, `X-Device-Name`, `X-Platform` (`ios` | `android`), `X-App-Version` (opcional)
 
 **Enviar:**
 
@@ -307,7 +315,7 @@
 
 ### 🟢 `GET /auth/profile`
 
-**Headers:** `Authorization`, `X-Device-Id`, `X-Device-Name`
+**Headers:** `Authorization`, `X-Device-Id`, `X-Device-Name`, `X-Platform` (`ios` | `android`), `X-App-Version` (opcional)
 
 **Esperar `200`:**
 
@@ -338,7 +346,7 @@
 
 ### 🟠 `PATCH /auth/profile`
 
-**Headers:** `Authorization`, `X-Device-Id`, `X-Device-Name`
+**Headers:** `Authorization`, `X-Device-Id`, `X-Device-Name`, `X-Platform` (`ios` | `android`), `X-App-Version` (opcional)
 
 **Enviar:** Solo los campos que cambian.
 
@@ -369,7 +377,7 @@
 
 ### 🟡 `POST /auth/logout`
 
-**Headers:** `Authorization`, `X-Device-Id`, `X-Device-Name`
+**Headers:** `Authorization`, `X-Device-Id`, `X-Device-Name`, `X-Platform` (`ios` | `android`), `X-App-Version` (opcional)
 
 **Enviar:** Body vacío.
 

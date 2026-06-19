@@ -23,6 +23,8 @@ describe('LoginUserUseCase', () => {
   const device = {
     deviceId: 'dev-1',
     deviceName: 'Pixel',
+    platform: 'android',
+    appVersion: '1.0.0',
     fcmToken: null,
   };
 
@@ -39,7 +41,6 @@ describe('LoginUserUseCase', () => {
       findByUserIdAndDeviceId: jest.fn(),
       save: jest.fn(),
       delete: jest.fn(),
-      deleteByUserIdExceptDevice: jest.fn(),
     } as never;
     firebaseAuth = {
       signIn: jest.fn(),

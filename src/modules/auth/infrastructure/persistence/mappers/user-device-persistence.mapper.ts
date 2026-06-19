@@ -7,8 +7,9 @@ export class UserDevicePersistenceMapper {
       userId: orm.userId,
       deviceId: orm.deviceId,
       deviceName: orm.deviceName,
+      platform: orm.platform,
+      appVersion: orm.appVersion,
       fcmToken: orm.fcmToken,
-      refreshTokenEncrypted: orm.refreshTokenEncrypted,
       lastActiveAt: orm.lastActiveAt,
       createdAt: orm.createdAt,
     });
@@ -20,8 +21,9 @@ export class UserDevicePersistenceMapper {
     orm.userId = device.userId;
     orm.deviceId = device.deviceId;
     orm.deviceName = device.deviceName;
+    orm.platform = device.platform;
+    orm.appVersion = device.appVersion;
     orm.fcmToken = device.fcmToken;
-    orm.refreshTokenEncrypted = device.refreshTokenEncrypted;
     orm.lastActiveAt = device.lastActiveAt;
     orm.createdAt = device.createdAt;
     return orm;

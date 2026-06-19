@@ -1,5 +1,5 @@
 import {
-  BadRequestException,
+  ConflictException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import * as admin from 'firebase-admin';
+import { ValidationException } from '../../../../shared-kernel/domain/exceptions/validation.exception';
 import {
   FirebaseAuthResult,
   FirebaseGoogleSignInResult,
@@ -338,9 +339,7 @@ export class FirebaseAuthService implements IFirebaseAuthService {
 
   private mapFirebaseError(code: string): Error {
     if (code.startsWith('EMAIL_EXISTS')) {
-      return new BadRequestException(
-        'El correo electronico ya esta registrado',
-      );
+      return new ConflictException('El correo electronico ya esta registrado');
     }
     if (
       code.startsWith('INVALID_PASSWORD') ||
@@ -365,7 +364,13 @@ export class FirebaseAuthService implements IFirebaseAuthService {
       );
     }
     if (code.startsWith('WEAK_PASSWORD')) {
-      return new BadRequestException('La contraseña es demasiado débil');
+      return new ValidationException('Los datos enviados no son validos.', [
+        {
+          field: 'password',
+          value: undefined,
+          error: 'La contraseña es demasiado débil',
+        },
+      ]);
     }
     return new InternalServerErrorException(`Error de autenticacion: ${code}`);
   }

@@ -8,9 +8,16 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import {
+  NormalizeName,
+  TrimLowercase,
+  TrimUppercase,
+} from '../../../../shared-kernel/application/decorators/sanitize.decorators';
+import { IsPersonName } from '../../../../shared-kernel/application/decorators/validation.decorators';
 
 export class RegisterUserDto {
   @ApiProperty({ example: 'jane.doe@kashy.app' })
+  @TrimLowercase()
   @IsEmail()
   email!: string;
 
@@ -21,16 +28,21 @@ export class RegisterUserDto {
   password!: string;
 
   @ApiProperty({ example: 'Jane', maxLength: 80 })
+  @NormalizeName()
+  @IsPersonName()
   @IsString()
   @MaxLength(80)
   firstName!: string;
 
   @ApiProperty({ example: 'Doe', maxLength: 80 })
+  @NormalizeName()
+  @IsPersonName()
   @IsString()
   @MaxLength(80)
   lastName!: string;
 
   @ApiProperty({ example: 'VE', description: 'Codigo ISO 3166-1 alpha-2' })
+  @TrimUppercase()
   @IsString()
   @Length(2, 2)
   countryCode!: string;
