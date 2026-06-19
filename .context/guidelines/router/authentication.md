@@ -112,9 +112,11 @@
 ```json
 {
   "email": "string",
-  "password": "string"
+  "password": "string (sin validación de longitud)"
 }
 ```
+
+> El login **no** valida longitud de contraseña — `LoginUserDto` solo aplica `@IsString()`. La verificación real la hace Firebase contra el hash existente. Reglas `min 8 / max 64` solo aplican en `register`/`change-password`.
 
 **Esperar `200`:**
 
