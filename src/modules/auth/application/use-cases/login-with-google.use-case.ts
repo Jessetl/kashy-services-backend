@@ -81,11 +81,11 @@ export class LoginWithGoogleUseCase implements UseCase<
     const existing = await this.userRepository.findByFirebaseUid(
       fb.firebaseUid,
     );
-    if (existing) return existing;
 
-    // Auto-registro Google: el body no trae country_code. Default 'VE'
-    // (mercado primario MVP); el usuario lo actualiza vía PATCH /auth/profile.
-    // Ver authentication.md.
+    if (existing) {
+      return existing;
+    }
+
     const user = User.create(
       randomUUID(),
       fb.firebaseUid,

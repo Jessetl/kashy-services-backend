@@ -161,7 +161,7 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @Post('login/google')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -195,6 +195,11 @@ export class AuthController {
   @ApiResponse({
     status: 401,
     description: 'Token de Google rechazado',
+    type: ApiErrorResponse,
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Rate limit excedido (>3/min)',
     type: ApiErrorResponse,
   })
   loginGoogle(
