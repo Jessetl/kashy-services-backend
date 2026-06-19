@@ -13,12 +13,12 @@
 
 > Kashy es mobile-only (React Native). No hay web.
 
-| Dato            | Dónde guardar                                                                     | Notas                                                                                                         |
-| --------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Dato            | Dónde guardar                                                                           | Notas                                                                                                                               |
+| --------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `refreshToken`  | **Keychain** (iOS) / **Android Keystore + SharedPreferences cifrado AES-GCM** (Android) | Usar **`expo-secure-store`** (módulo oficial Expo, ya instalado). Wrapper `secureStorage`. Persiste entre reinicios. Es el crítico. |
-| `accessToken`   | **Keychain** (iOS) / **Keystore** (Android) — misma lib (`expo-secure-store`)     | Persiste entre sesiones. Al abrir la app, si expiró (15 min), se dispara refresh automático.                  |
-| `user`          | **Zustand** (memoria) + puede cachearse en Keychain/Keystore para arranque rápido | Se rehidrata al iniciar la app desde almacenamiento seguro o desde `GET /auth/profile`.                       |
-| Preferencias UI | **AsyncStorage** — onboarding completado, tema, idioma, etc.                      | Datos no sensibles solamente.                                                                                 |
+| `accessToken`   | **Keychain** (iOS) / **Keystore** (Android) — misma lib (`expo-secure-store`)           | Persiste entre sesiones. Al abrir la app, si expiró (`expiresIn`, ~1h), se dispara refresh automático.                              |
+| `user`          | **Zustand** (memoria) + puede cachearse en Keychain/Keystore para arranque rápido       | Se rehidrata al iniciar la app desde almacenamiento seguro o desde `GET /auth/profile`.                                             |
+| Preferencias UI | **AsyncStorage** — onboarding completado, tema, idioma, etc.                            | Datos no sensibles solamente.                                                                                                       |
 
 **Reglas:**
 
@@ -27,6 +27,7 @@
 - **No sincronizar** el `refreshToken` a iCloud Keychain ni Google Backup. El refresh es per-device.
 - **Zustand** carga ambos tokens en memoria al iniciar la app (desde Keychain/Keystore). Durante la sesión activa se leen del store en memoria (rápido). Keychain/Keystore es la fuente de verdad persistente.
 - Al recibir tokens del backend, siempre **sobrescribir** en Keychain/Keystore antes de actualizar Zustand.
+- **TTL del `accessToken` (JWT custom):** el backend firma el JWT con el mismo `expiresIn` que devuelve el idToken de Firebase (~3600s / 1h), no un valor fijo. El cliente debe usar el `expiresIn` de la respuesta — nunca hardcodear 900/3600. Mantiene JWT custom y idToken de Firebase en la misma ventana.
 
 ---
 
@@ -119,9 +120,9 @@
 
 ```json
 {
-  "accessToken": "string (JWT custom, 15 min)",
+  "accessToken": "string (JWT custom, TTL = expiresIn del idToken de Firebase, ~3600s)",
   "refreshToken": "string (Firebase refresh, larga vida)",
-  "expiresIn": 900,
+  "expiresIn": 3600,
   "user": {
     "id": "uuid",
     "email": "string",
@@ -145,10 +146,12 @@
 
 **Errores:**
 
-| Código | Qué hacer                                                               |
-| :----- | :---------------------------------------------------------------------- |
-| `400`  | Body malformado. Bug del frontend — revisar payload.                    |
-| `401`  | Credenciales inválidas o email no verificado. Mostrar error al usuario. |
+| Código | Qué hacer                                                                                                                                                                              |
+| :----- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  | Body malformado. Bug del frontend — revisar payload.                                                                                                                                   |
+| `401`  | Credenciales inválidas. Mostrar error al usuario.                                                                                                                                      |
+| `403`  | Email no verificado. Mostrar aviso de verificación + opción de reenviar correo.                                                                                                        |
+| `404`  | Auth Firebase OK pero el usuario no existe en la BD (cuenta huérfana). El login **no** crea usuarios — registro es la única vía de creación. Redirigir a registro o contactar soporte. |
 
 ---
 
@@ -170,9 +173,9 @@
 
 ```json
 {
-  "accessToken": "string (JWT custom, 15 min)",
+  "accessToken": "string (JWT custom, TTL = expiresIn del idToken de Firebase, ~3600s)",
   "refreshToken": "string (Firebase refresh, larga vida)",
-  "expiresIn": 900,
+  "expiresIn": 3600,
   "user": {
     "id": "uuid",
     "email": "string",
@@ -225,9 +228,9 @@
 
 ```json
 {
-  "accessToken": "string (nuevo JWT custom, 15 min)",
+  "accessToken": "string (nuevo JWT custom, TTL = expiresIn del idToken de Firebase, ~3600s)",
   "refreshToken": "string (rotado si Firebase entregó uno nuevo, sino el mismo)",
-  "expiresIn": 900
+  "expiresIn": 3600
 }
 ```
 

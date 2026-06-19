@@ -112,7 +112,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Login con email + password',
     description:
-      'Autentica contra Firebase, upserta el dispositivo en user_devices (sin almacenar refresh) y devuelve JWT custom (15 min) + refreshToken de Firebase + perfil. El cliente debe guardar el refreshToken en Keychain (iOS) o Keystore (Android).',
+      'Autentica contra Firebase, upserta el dispositivo en user_devices (sin almacenar refresh) y devuelve JWT custom (TTL = expiresIn del idToken de Firebase, ~3600s) + refreshToken de Firebase + perfil. El login no crea usuarios: registro es la unica via de creacion. El cliente debe guardar el refreshToken en Keychain (iOS) o Keystore (Android).',
   })
   @ApiHeader({ name: 'X-Device-Id', required: true })
   @ApiHeader({ name: 'X-Device-Name', required: true })
@@ -133,8 +133,24 @@ export class AuthController {
     type: AuthResponseDto,
   })
   @ApiResponse({
+    status: 400,
+    description: 'Body malformado',
+    type: ApiErrorResponse,
+  })
+  @ApiResponse({
     status: 401,
     description: 'Credenciales invalidas',
+    type: ApiErrorResponse,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Email no verificado',
+    type: ApiErrorResponse,
+  })
+  @ApiResponse({
+    status: 404,
+    description:
+      'Auth Firebase OK pero el usuario no existe en la BD (cuenta huerfana). El login no crea usuarios.',
     type: ApiErrorResponse,
   })
   login(
