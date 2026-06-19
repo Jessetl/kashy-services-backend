@@ -114,7 +114,7 @@ export class LoginWithGoogleUseCase implements UseCase<
     );
 
     if (existing && existing.userId === userId) {
-      const reassigned = existing.reassignToUser(
+      const reassigned = existing.refresh(
         userId,
         device.deviceName,
         device.platform,

@@ -5,7 +5,10 @@ import type { IUserRepository } from '../../domain/interfaces/repositories/user.
 import { USER_REPOSITORY } from '../../domain/interfaces/repositories/user.repository.interface';
 import type { IUserDeviceRepository } from '../../domain/interfaces/repositories/user-device.repository.interface';
 import { USER_DEVICE_REPOSITORY } from '../../domain/interfaces/repositories/user-device.repository.interface';
-import type { IFirebaseAuthService } from '../../domain/interfaces/services/firebase-auth.service.interface';
+import type {
+  FirebaseRefreshResult,
+  IFirebaseAuthService,
+} from '../../domain/interfaces/services/firebase-auth.service.interface';
 import { FIREBASE_AUTH_SERVICE } from '../../domain/interfaces/services/firebase-auth.service.interface';
 import { RefreshResponseDto } from '../dtos/refresh-response.dto';
 import { JwtTokenService } from '../services/jwt-token.service';
@@ -35,7 +38,7 @@ export class RefreshTokenUseCase implements UseCase<
   async execute(input: RefreshTokenInput): Promise<RefreshResponseDto> {
     const { refreshToken, deviceId } = input;
 
-    let firebaseResult;
+    let firebaseResult: FirebaseRefreshResult;
     try {
       firebaseResult = await this.firebaseAuth.refreshIdToken(refreshToken);
     } catch (error) {
@@ -66,7 +69,10 @@ export class RefreshTokenUseCase implements UseCase<
     const touched = device.touch();
     await this.deviceRepository.save(touched);
 
-    const signed = await this.jwtTokenService.signFor(user);
+    const signed = await this.jwtTokenService.signFor(
+      user,
+      firebaseResult.expiresIn,
+    );
 
     return {
       accessToken: signed.accessToken,

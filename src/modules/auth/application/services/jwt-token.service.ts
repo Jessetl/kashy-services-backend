@@ -19,7 +19,10 @@ export interface SignedJwt {
 export class JwtTokenService {
   constructor(private readonly jwtService: JwtService) {}
 
-  async signFor(user: User): Promise<SignedJwt> {
+  async signFor(
+    user: User,
+    ttlSeconds = JWT_DEFAULT_TTL_SECONDS,
+  ): Promise<SignedJwt> {
     const payload: JwtCustomPayload = {
       sub: user.id,
       email: user.email,
@@ -27,12 +30,12 @@ export class JwtTokenService {
     };
 
     const accessToken = await this.jwtService.signAsync(payload, {
-      expiresIn: JWT_DEFAULT_TTL_SECONDS,
+      expiresIn: ttlSeconds,
     });
 
     return {
       accessToken,
-      expiresIn: JWT_DEFAULT_TTL_SECONDS,
+      expiresIn: ttlSeconds,
     };
   }
 
