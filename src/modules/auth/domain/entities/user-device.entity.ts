@@ -68,7 +68,7 @@ export class UserDevice extends BaseEntity {
     });
   }
 
-  reassignToUser(
+  refresh(
     userId: string,
     deviceName: string,
     platform: string,

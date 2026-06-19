@@ -15,13 +15,14 @@
 
 | Dato            | Dónde guardar                                                                     | Notas                                                                                                         |
 | --------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `refreshToken`  | **Keychain** (iOS) / **Keystore + EncryptedSharedPreferences** (Android)          | Usar `react-native-keychain` o `expo-secure-store`. Persiste entre reinicios y cierres de app. Es el crítico. |
-| `accessToken`   | **Keychain** (iOS) / **Keystore** (Android) — misma lib                           | Persiste entre sesiones. Al abrir la app, si expiró (15 min), se dispara refresh automático.                  |
+| `refreshToken`  | **Keychain** (iOS) / **Android Keystore + SharedPreferences cifrado AES-GCM** (Android) | Usar **`expo-secure-store`** (módulo oficial Expo, ya instalado). Wrapper `secureStorage`. Persiste entre reinicios. Es el crítico. |
+| `accessToken`   | **Keychain** (iOS) / **Keystore** (Android) — misma lib (`expo-secure-store`)     | Persiste entre sesiones. Al abrir la app, si expiró (15 min), se dispara refresh automático.                  |
 | `user`          | **Zustand** (memoria) + puede cachearse en Keychain/Keystore para arranque rápido | Se rehidrata al iniciar la app desde almacenamiento seguro o desde `GET /auth/profile`.                       |
 | Preferencias UI | **AsyncStorage** — onboarding completado, tema, idioma, etc.                      | Datos no sensibles solamente.                                                                                 |
 
 **Reglas:**
 
+- **Lib por defecto: `expo-secure-store`.** No usar `react-native-keychain` salvo que se necesite biometría/Face ID gating o valores >2 KB (límite por valor de expo-secure-store). Esa decisión debe documentarse aparte.
 - **Prohibido** guardar tokens en `AsyncStorage`, `SharedPreferences` plain, `NSUserDefaults` o archivos sin cifrar.
 - **No sincronizar** el `refreshToken` a iCloud Keychain ni Google Backup. El refresh es per-device.
 - **Zustand** carga ambos tokens en memoria al iniciar la app (desde Keychain/Keystore). Durante la sesión activa se leen del store en memoria (rápido). Keychain/Keystore es la fuente de verdad persistente.
@@ -91,13 +92,13 @@
 
 **Errores:**
 
-| Código | Qué hacer                                                                                                                                                |
-| :----- | :------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `400`  | Body malformado. Bug del frontend — revisar payload.                                                                                                     |
-| `409`  | Email ya registrado. Mostrar error en el campo email.                                                                                                    |
+| Código | Qué hacer                                                                                                                                                                |
+| :----- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  | Body malformado. Bug del frontend — revisar payload.                                                                                                                     |
+| `409`  | Email ya registrado. Mostrar error en el campo email.                                                                                                                    |
 | `422`  | Validación fallida (incluye contraseña rechazada por Firebase: débil/comprometida → `fields[].field = "password"`). Mapear `fields[]` a errores por campo en formulario. |
-| `429`  | Rate limit excedido (>3/min). Mostrar "Demasiados intentos, espera un momento" y deshabilitar el botón ~60s.                                             |
-| `500`  | Fallo interno al crear la cuenta (Firebase o DB). El backend revierte el registro parcial automáticamente. Mostrar error genérico y permitir reintentar. |
+| `429`  | Rate limit excedido (>3/min). Mostrar "Demasiados intentos, espera un momento" y deshabilitar el botón ~60s.                                                             |
+| `500`  | Fallo interno al crear la cuenta (Firebase o DB). El backend revierte el registro parcial automáticamente. Mostrar error genérico y permitir reintentar.                 |
 
 ---
 
