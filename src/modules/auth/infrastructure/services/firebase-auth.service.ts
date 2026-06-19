@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -8,6 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import * as admin from 'firebase-admin';
+import { ValidationException } from '../../../../shared-kernel/domain/exceptions/validation.exception';
 import {
   FirebaseAuthResult,
   FirebaseGoogleSignInResult,
@@ -364,7 +364,13 @@ export class FirebaseAuthService implements IFirebaseAuthService {
       );
     }
     if (code.startsWith('WEAK_PASSWORD')) {
-      return new BadRequestException('La contraseña es demasiado débil');
+      return new ValidationException('Los datos enviados no son validos.', [
+        {
+          field: 'password',
+          value: undefined,
+          error: 'La contraseña es demasiado débil',
+        },
+      ]);
     }
     return new InternalServerErrorException(`Error de autenticacion: ${code}`);
   }

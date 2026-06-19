@@ -1,4 +1,9 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { randomUUID } from 'crypto';
 import { UseCase } from '../../../../shared-kernel/application/use-case';
@@ -36,7 +41,7 @@ export class RegisterUserUseCase implements UseCase<
   async execute(dto: RegisterUserDto): Promise<RegisterResponseDto> {
     const existing = await this.userRepository.findByEmail(dto.email);
     if (existing) {
-      throw new UserAlreadyExistsException(dto.email);
+      throw new UserAlreadyExistsException();
     }
 
     const displayName =
@@ -74,14 +79,14 @@ export class RegisterUserUseCase implements UseCase<
       try {
         await this.firebaseAuth.deleteUser(firebaseResult.firebaseUid);
       } catch (rollbackErr) {
-        const rollbackMsg =
-          rollbackErr instanceof Error
-            ? rollbackErr.message
-            : String(rollbackErr);
-        this.logger.error(`Firebase rollback failed: ${rollbackMsg}`);
+        this.logger.error(
+          `Firebase rollback failed: ${JSON.stringify(rollbackErr)}. Manual cleanup may be required for UID: ${firebaseResult.firebaseUid}.`,
+        );
       }
 
-      throw error;
+      throw new InternalServerErrorException(
+        'Fallo interno al crear la cuenta. Por favor intenta de nuevo.',
+      );
     }
 
     await this.eventEmitter.emitAsync(
@@ -92,9 +97,8 @@ export class RegisterUserUseCase implements UseCase<
     try {
       await this.firebaseAuth.sendEmailVerification(firebaseResult.idToken);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(
-        `Failed to send verification email to ${dto.email}: ${message}`,
+        `Failed to send verification email to ${dto.email}: ${JSON.stringify(error)}. User account created but email verification may not have been sent.`,
       );
     }
 

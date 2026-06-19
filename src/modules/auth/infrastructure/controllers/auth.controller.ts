@@ -77,12 +77,28 @@ export class AuthController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Datos invalidos o email en uso',
+    description: 'Body malformado',
     type: ApiErrorResponse,
   })
   @ApiResponse({
     status: 409,
-    description: 'Usuario ya existe',
+    description: 'Email ya registrado',
+    type: ApiErrorResponse,
+  })
+  @ApiResponse({
+    status: 422,
+    description:
+      'Validacion fallida (incluye contraseña debil/comprometida rechazada por Firebase)',
+    type: ApiValidationErrorResponse,
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Rate limit excedido (>3/min)',
+    type: ApiErrorResponse,
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Fallo interno al crear la cuenta (Firebase o DB)',
     type: ApiErrorResponse,
   })
   register(@Body() dto: RegisterUserDto): Promise<RegisterResponseDto> {

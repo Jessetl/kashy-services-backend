@@ -55,6 +55,8 @@
 
 **Headers:** Ninguno requerido (no abre sesión, no requiere `X-Device-Id` / `X-Device-Name`).
 
+**Rate limit:** 3 peticiones por minuto (por IP). Al exceder devuelve `429 Too Many Requests`.
+
 **Enviar:**
 
 ```json
@@ -89,11 +91,13 @@
 
 **Errores:**
 
-| Código | Qué hacer                                                                |
-| :----- | :----------------------------------------------------------------------- |
-| `400`  | Body malformado. Bug del frontend — revisar payload.                     |
-| `409`  | Email ya registrado. Mostrar error en el campo email.                    |
-| `422`  | Validación fallida. Mapear `fields[]` a errores por campo en formulario. |
+| Código | Qué hacer                                                                                                                                                |
+| :----- | :------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `400`  | Body malformado. Bug del frontend — revisar payload.                                                                                                     |
+| `409`  | Email ya registrado. Mostrar error en el campo email.                                                                                                    |
+| `422`  | Validación fallida (incluye contraseña rechazada por Firebase: débil/comprometida → `fields[].field = "password"`). Mapear `fields[]` a errores por campo en formulario. |
+| `429`  | Rate limit excedido (>3/min). Mostrar "Demasiados intentos, espera un momento" y deshabilitar el botón ~60s.                                             |
+| `500`  | Fallo interno al crear la cuenta (Firebase o DB). El backend revierte el registro parcial automáticamente. Mostrar error genérico y permitir reintentar. |
 
 ---
 
