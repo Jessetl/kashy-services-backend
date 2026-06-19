@@ -28,9 +28,7 @@ import { AuthController } from './infrastructure/controllers/auth.controller';
 
 @Global()
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([UserOrmEntity, UserDeviceOrmEntity]),
-  ],
+  imports: [TypeOrmModule.forFeature([UserOrmEntity, UserDeviceOrmEntity])],
   controllers: [AuthController],
   providers: [
     { provide: USER_REPOSITORY, useClass: TypeOrmUserRepository },
@@ -54,10 +52,6 @@ import { AuthController } from './infrastructure/controllers/auth.controller';
       useExisting: SyncFirebaseUserUseCase,
     },
   ],
-  exports: [
-    USER_READER,
-    USER_DEVICE_READER,
-    FIREBASE_USER_SYNC_PORT,
-  ],
+  exports: [USER_READER, USER_DEVICE_READER, FIREBASE_USER_SYNC_PORT],
 })
 export class AuthModule {}

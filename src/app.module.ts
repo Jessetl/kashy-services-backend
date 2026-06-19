@@ -64,6 +64,13 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 
     // Rate limiting
     ThrottlerModule.forRoot([
+      // Throttler base: lo sobrescriben los @Throttle({ default: ... }) por ruta.
+      // Sin este nombre 'default', esos overrides no aplican (silenciosamente).
+      {
+        name: 'default',
+        ttl: 60000,
+        limit: 100,
+      },
       {
         name: 'short',
         ttl: 1000,

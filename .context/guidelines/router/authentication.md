@@ -112,9 +112,11 @@
 ```json
 {
   "email": "string",
-  "password": "string"
+  "password": "string (sin validación de longitud)"
 }
 ```
+
+> El login **no** valida longitud de contraseña — `LoginUserDto` solo aplica `@IsString()`. La verificación real la hace Firebase contra el hash existente. Reglas `min 8 / max 64` solo aplican en `register`/`change-password`.
 
 **Esperar `200`:**
 
@@ -274,11 +276,11 @@
 
 **Errores:**
 
-| Código | Qué hacer                                                 |
-| :----- | :-------------------------------------------------------- |
-| `400`  | Body no es JSON válido o falta `email`. Bug del frontend. |
+| Código | Qué hacer                                                                  |
+| :----- | :------------------------------------------------------------------------- |
+| `422`  | Email inválido o mal formado / `email` ausente. Validación fallida.        |
 
-> No esperar `422` — el backend silencia errores de validación de negocio en este endpoint por seguridad.
+> El backend silencia errores **de negocio** (email no existe → `204`, anti-enumeración), pero la validación de formato del email (`@IsEmail`) sí responde `422`.
 
 ---
 
