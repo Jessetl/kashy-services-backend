@@ -175,7 +175,7 @@ sequenceDiagram
     FE->>FE: Mostrar "Revisa tu correo" → Login
 ```
 
-No esperar `422` — el backend silencia errores de validación por seguridad.
+El backend silencia errores de negocio (email no existe → `204`, anti-enumeración), pero la validación de formato del email responde `422`.
 
 ---
 

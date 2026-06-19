@@ -256,14 +256,14 @@ export class AuthController {
   })
   @ApiResponse({ status: 204, description: 'Email de recuperacion enviado' })
   @ApiResponse({
-    status: 400,
-    description: 'Email invalido',
-    type: ApiErrorResponse,
+    status: 422,
+    description: 'Email invalido o mal formado',
+    type: ApiValidationErrorResponse,
   })
   @ApiResponse({
-    status: 422,
-    description: 'Email mal formado',
-    type: ApiValidationErrorResponse,
+    status: 429,
+    description: 'Rate limit excedido (>3/min)',
+    type: ApiErrorResponse,
   })
   recoverPassword(@Body() dto: RecoverPasswordDto): Promise<void> {
     return this.recoverPasswordUseCase.execute(dto);

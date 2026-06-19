@@ -31,7 +31,6 @@ export class RecoverPasswordUseCase implements UseCase<
       this.logger.warn(
         `Password reset email dispatch failed for ${dto.email}: ${message}`,
       );
-      // No re-lanzamos errores transitorios de Firebase para evitar leak por status code.
     }
   }
 }

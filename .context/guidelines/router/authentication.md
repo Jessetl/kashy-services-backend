@@ -274,11 +274,11 @@
 
 **Errores:**
 
-| Código | Qué hacer                                                 |
-| :----- | :-------------------------------------------------------- |
-| `400`  | Body no es JSON válido o falta `email`. Bug del frontend. |
+| Código | Qué hacer                                                                  |
+| :----- | :------------------------------------------------------------------------- |
+| `422`  | Email inválido o mal formado / `email` ausente. Validación fallida.        |
 
-> No esperar `422` — el backend silencia errores de validación de negocio en este endpoint por seguridad.
+> El backend silencia errores **de negocio** (email no existe → `204`, anti-enumeración), pero la validación de formato del email (`@IsEmail`) sí responde `422`.
 
 ---
 
